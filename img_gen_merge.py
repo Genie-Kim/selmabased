@@ -1,5 +1,6 @@
 from diffusers import StableDiffusionPipeline, StableDiffusionXLPipeline
 from diffusers.schedulers import KarrasDiffusionSchedulers,DPMSolverMultistepScheduler
+from models.LongCLIP import longclip
 import shutil
 import torch
 import json
@@ -7,16 +8,17 @@ import csv
 import os
 from tqdm import tqdm
 import argparse
-from models.LongpromptStableDiffusion_base import LongpromptStableDiffusionPipeline
+from models.RepeatTextencStableDiffusion_base import RepeatTextencStableDiffusionPipeline
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--model_id', type=str, default="stabilityai/stable-diffusion-2")
+parser.add_argument('--model_id', type=str, default="runwayml/stable-diffusion-v1-5")
 parser.add_argument('--prompt_path', type=str, default="datasets/ShareGPT4V/data/sharegpt4v/sharegpt4v_instruct_gpt4-vision_cap100k.json")
 parser.add_argument('--output_path', type=str, default="longtext_imggen")
 parser.add_argument('--cache_dir', type=str, default="/home/compu/JinProjects/jinprojects/SELMA/pretrained_models")
 parser.add_argument('--eval_benchmark', type=str, default="DSG")
 parser.add_argument('--batch_size', type=int, default=1)
 parser.add_argument('--text_enc', type=str, default="clip")
+parser.add_argument('--repeat_textenc', type=bool, default=False)
 
 args = parser.parse_args()
 
@@ -26,31 +28,47 @@ print(device)
 # model_id = "stabilityai/stable-diffusion-2"
 # model_id = "stabilityai/stable-diffusion-xl-base-1.0"
 # model_id = "CompVis/stable-diffusion-v1-4"
+# model_id = "runwayml/stable-diffusion-v1-5"
 model_id = args.model_id
 output_path = args.output_path
 batch_size = args.batch_size
 dataset_path = "/home/compu/JinProjects/jinprojects/SELMA/datasets/ShareGPT4V/data"
 
+assert model_id!="stabilityai/stable-diffusion-2" or args.text_enc!='longclip', "LongCLIP model is not supported SD v2.1"
+
+if args.text_enc == 'longclip':
+    longclip_modelpath= os.path.join(args.cache_dir,"LongCLIP/longclip-L.pt")
+    
+else:
+    longclip_modelpath= None
+
+
 if "xl" in model_id:
     print("not implemented")
+    #     pipe = RepeatTextencStableDiffusionPipeline.from_pretrained(
+    #         model_id,
+    #         torch_dtype=torch.float16,
+    #         cache_dir=args.cache_dir,
+    #         safety_checker=None,
+    #         seed=2468,
+    #         repeat_textenc=args.repeat_textenc,
+    #     )
+    
 else:
-    pipe = LongpromptStableDiffusionPipeline.from_pretrained(
+    pipe = RepeatTextencStableDiffusionPipeline.from_pretrained(
         model_id,
         torch_dtype=torch.float16,
         cache_dir=args.cache_dir,
         safety_checker=None,
         seed=2468,
-        repeat_textenc=True
+        repeat_textenc=args.repeat_textenc,
+        longclip_modelfile=longclip_modelpath,
     )
     # # for match with rpg model's configuration.
     # num_inference_steps=20,  # sampling step
     # height=1024,
     # width=1024,
     # guidance_scale=7.0,
-    
-if args.text_enc =="longclip":
-    pass
-    # pipe.text_encoder = text_encoder
 
 pipe.scheduler = DPMSolverMultistepScheduler.from_config(pipe.scheduler.config)
 pipe.to(device)
