@@ -9,7 +9,7 @@ import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--model_id', type=str, default="stabilityai/stable-diffusion-2")
-parser.add_argument('--cache_dir', type=str, default="pretrained_model")
+parser.add_argument('--cache_dir', type=str, default="pretrained_models")
 parser.add_argument('--prompt_path', type=str, default="llm/Prompts/localized_narrative_prompt_expansion_5k.json")
 parser.add_argument('--output_path', type=str, default="datasets/localized_narrative_prompt_expansion_5k")
 parser.add_argument('--batch_size', type=int, default=1)
