@@ -45,6 +45,7 @@ else:
 
 if "xl" in model_id:
     print("not implemented")
+
     #     pipe = RepeatTextencStableDiffusionPipeline.from_pretrained(
     #         model_id,
     #         torch_dtype=torch.float16,
