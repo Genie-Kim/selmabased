@@ -49,8 +49,7 @@ batch_size = args.batch_size
 seed=2468
 
 
-# TODO: XL 구현, repeatedclip batch 구현.
-
+# TODO: XL 구현
 assert (
     model_id != "stabilityai/stable-diffusion-2" or args.text_enc != "longclip"
 ), "LongCLIP model is not supported SD v2.1"
@@ -130,6 +129,7 @@ for folder, data_dict in tqdm(data.items()):
                 # width=width,
             ).images
             print(len(images))
+            a = images[0]
             for j, img in enumerate(images):
                 img.save(os.path.join(output_path, f"{names[j]}"))
                 # copy the image from the imagepath to the output path
