@@ -168,7 +168,7 @@ class RepeatTextencStableDiffusionPipeline(StableDiffusionPipeline):
                     text_input_ids = text_inputs.input_ids
                     
                     print(f"repeat text encoding : current prompt length is {text_input_ids.size(1)}")
-                    divided_text_input_ids = text_input_ids.view(batch_size, -1,token_max_length) # [batch_size, num_tokens, token_max_length]
+                    divided_text_input_ids = text_input_ids.view(batch_size, -1,token_max_length) # [batch_size, text split number, token_max_length]
                     repeat_count = divided_text_input_ids.size(1)
                     if hasattr(self.text_encoder.config, "use_attention_mask") and self.text_encoder.config.use_attention_mask:
                         attention_mask = text_inputs.attention_mask.to(device)
@@ -318,11 +318,12 @@ class RepeatTextencStableDiffusionPipeline(StableDiffusionPipeline):
                         uncond_tokens,
                         padding="max_length",
                         max_length=current_max_length,
+                        truncation=True,
                         return_tensors="pt",
                     )
                     uncond_input_ids = uncond_input.input_ids
                     token_max_length = self.tokenizer.model_max_length
-                    divided_uncond_input_ids = uncond_input_ids.view(batch_size, -1,token_max_length) # [batch_size, num_tokens, token_max_length]
+                    divided_uncond_input_ids = uncond_input_ids.view(batch_size, -1,token_max_length) # [batch_size, text split number, token_max_length]
                     repeat_count = divided_uncond_input_ids.size(1)
                     
                     if hasattr(self.text_encoder.config, "use_attention_mask") and self.text_encoder.config.use_attention_mask:
