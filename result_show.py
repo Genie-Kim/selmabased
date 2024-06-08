@@ -104,8 +104,12 @@ columns = (
 result_table = wandb.Table(columns=columns)
 
 def get_result_row_list(idx):
-    # valuedict has keys : gpt4vcaption, imagepath, question_list
-    folder, value_dict = get_origin_info(origin_json, idx)
+    try:
+        # valuedict has keys : gpt4vcaption, imagepath, question_list
+        folder, value_dict = get_origin_info(origin_json, idx)
+    except:
+        print(f"Error: {idx} not found in the origin json")
+        print(value_dict)
     # get the full paths of the experiment results
     results_path_list = get_result_paths(exp_result_paths, idx)
     origin_imgpath = os.path.join(data_root_path, value_dict["imagepath"])

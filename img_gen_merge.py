@@ -17,37 +17,41 @@ from models.RepeatTextencStableDiffusion_base import (
 )
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--model_id", type=str, default="runwayml/stable-diffusion-v1-5")
-parser.add_argument(
-    "--prompt_path",
-    type=str,
+parser.add_argument("--prompt_path", type=str,
     default="datasets/ShareGPT4V/data/sharegpt4v/Dict_DSG_nondupid_generated_sharegpt4v_instruct_gpt4-vision_cap100k.json",
 )
 parser.add_argument("--output_path", type=str, default="exp_results")
-parser.add_argument(
-    "--cache_dir",
-    type=str,
+parser.add_argument("--cache_dir", type=str,
     default="/home/compu/JinProjects/jinprojects/SELMA/pretrained_models",
 )
 parser.add_argument("--eval_benchmark", type=str, default="DSG")
 parser.add_argument("--batch_size", type=int, default=16)
 parser.add_argument("--text_enc", type=str, default="clip")
-parser.add_argument("--repeat_textenc", type=bool, default=False)
-
+parser.add_argument("--repeat_textenc", action="store_true")
+parser.add_argument("--model_id", type=str, default="runwayml/stable-diffusion-v1-5")
 args = parser.parse_args()
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print(device)
+args.device = device
+
 # model_id = "stabilityai/stable-diffusion-2"
 # model_id = "stabilityai/stable-diffusion-xl-base-1.0"
 # model_id = "CompVis/stable-diffusion-v1-4"
 # model_id = "runwayml/stable-diffusion-v1-5"
+
 model_id = args.model_id
 output_foldername = args.text_enc + f"_repeat_textenc_{args.repeat_textenc}"
 output_path = os.path.join(args.output_path, model_id.split("/")[-1], output_foldername)
+args.output_path = output_path
 batch_size = args.batch_size
 seed=2468
+args.seed = seed
 
+sorted_args = sorted(vars(args).items())
+for arg, value in sorted_args:
+    # Print argument names in blue and values in green for clear differentiation
+    print(f"\033[34m{arg}\033[0m: {value}")
+input("Press Enter to continue...")
 
 # TODO: XL 구현
 assert (
@@ -83,8 +87,6 @@ else:
         repeat_textenc=args.repeat_textenc,
         longclip_modelfile=longclip_modelpath,
     )
-    height=512
-    width=512
     # TODO: add seed fix option....
     # # for match with rpg model's configuration.
     # num_inference_steps=20,  # sampling step
@@ -94,6 +96,7 @@ else:
 
 # pipe.scheduler = DPMSolverMultistepScheduler.from_config(pipe.scheduler.config)
 pipe.scheduler = DDIMScheduler.from_config(pipe.scheduler.config)
+pipe.set_progress_bar_config(disable=True)
 pipe.to(device)
 
 data_all = dict()
@@ -112,6 +115,7 @@ names = []
 generator = torch.cuda.manual_seed_all(seed)
 for folder, data_dict in tqdm(data.items()):
     count = 0
+    data_len = len(data_dict)
     for imageid, value in tqdm(data_dict.items()):
         prompt = value["gpt4vcaption"]
         filename = os.path.basename(value["imagepath"])
@@ -120,7 +124,7 @@ for folder, data_dict in tqdm(data.items()):
         names.append(name)
         count += 1
 
-        if len(prompts) == batch_size:
+        if len(prompts) == batch_size or data_len-count < data_len%batch_size:
             images = pipe(
                 prompts,
                 num_inference_steps=50,
@@ -137,7 +141,7 @@ for folder, data_dict in tqdm(data.items()):
 
             prompts = []
             names = []
-
+            
         # if count > 100:
         #     break
 

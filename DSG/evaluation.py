@@ -10,7 +10,7 @@ os.environ["TRANSFORMERS_CACHE"] = 'pretrained_models'
 os.environ['MODELSCOPE_CACHE'] = 'pretrained_models'
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--img_path', type=str, default=None)
+parser.add_argument('--img_path', type=str, default="exp_results/stable-diffusion-v1-5/clip_repeat_textenc_False")
 args = parser.parse_args()
 
 data_all = dict()
