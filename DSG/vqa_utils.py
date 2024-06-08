@@ -5,7 +5,6 @@ import os
 from pathlib import Path
 from PIL import Image
 
-
 def load_image(item_id, model_type, image_dir='../mspice/images/image_v1/'):
     image_path = Path(image_dir) / f'{item_id}_{model_type}.jpg'
     if os.path.exists(image_path):
