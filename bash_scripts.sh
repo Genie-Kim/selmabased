@@ -1,17 +1,24 @@
-CUDA_VISIBLE_DEVICES=3 python DSG/evaluation_sharegpt4v_multi.py --worker_num 4 \
+# not done
+CUDA_VISIBLE_DEVICES=3 python DSG/evaluation_sharegpt4v_multi.py --worker_num 7 \
+--exp_path "stable-diffusion-2/clip_repeat_textenc_True"
+
+# tm01
+CUDA_VISIBLE_DEVICES=3 python DSG/evaluation_sharegpt4v_multi.py --worker_num 7 \
 --exp_path "stable-diffusion-v1-5/clip_repeat_textenc_True"
 
-CUDA_VISIBLE_DEVICES=3 python DSG/evaluation_sharegpt4v_multi.py --worker_num 4 \
+# tm02
+CUDA_VISIBLE_DEVICES=2 python DSG/evaluation_sharegpt4v_multi.py --worker_num 7 \
 --exp_path "stable-diffusion-v1-5/clip_repeat_textenc_False"
 
-CUDA_VISIBLE_DEVICES=3 python DSG/evaluation_sharegpt4v_multi.py --worker_num 4 \
+# tm03
+CUDA_VISIBLE_DEVICES=1 python DSG/evaluation_sharegpt4v_multi.py --worker_num 7 \
 --exp_path "stable-diffusion-v1-5/longclip_repeat_textenc_False"
 
-CUDA_VISIBLE_DEVICES=3 python DSG/evaluation_sharegpt4v_multi.py --worker_num 4 \
+#tm04
+CUDA_VISIBLE_DEVICES=0 python DSG/evaluation_sharegpt4v_multi.py --worker_num 7 \
 --exp_path "stable-diffusion-2/clip_repeat_textenc_False"
 
-CUDA_VISIBLE_DEVICES=3 python DSG/evaluation_sharegpt4v_multi.py --worker_num 4 \
---exp_path "stable-diffusion-2/clip_repeat_textenc_True"
+
 
 
 
