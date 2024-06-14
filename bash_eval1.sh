@@ -16,14 +16,3 @@ else
 fi
 
 
-
-
-CUDA_VISIBLE_DEVICES=0 python img_gen_merge.py --text_enc "clip" \
---batch_size 16 \
---model_id "stabilityai/stable-diffusion-2-1"
-
-# not done
-CUDA_VISIBLE_DEVICES=0 python DSG/evaluation_sharegpt4v_multi.py --worker_num 7 \
---exp_path "stable-diffusion-2-1/clip_repeat_textenc_False"
-
-
