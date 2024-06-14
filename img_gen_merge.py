@@ -34,6 +34,7 @@ args = parser.parse_args()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 args.device = device
 
+# model_id = "stabilityai/stable-diffusion-2-1"
 # model_id = "stabilityai/stable-diffusion-2"
 # model_id = "stabilityai/stable-diffusion-xl-base-1.0"
 # model_id = "CompVis/stable-diffusion-v1-4"
