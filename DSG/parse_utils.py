@@ -1,3 +1,5 @@
+import re
+
 def clean_tuple_str(tuple_str):
 
     tuple_str = tuple_str
@@ -9,21 +11,55 @@ def clean_tuple_str(tuple_str):
 
     return tuple_str
 
+def clean_keyword_str(tuple_str):
+    keywordpattern  = r'\((.*?)\)'
+    
+    keyword_str = re.search(keywordpattern, tuple_str).group(1)
+    keyword_str = keyword_str.strip()
+
+    return keyword_str
+
+def find_elements(text):
+    text = "\n"+text+"\n"
+    # Define the regex pattern strictly for numbers between \n and | with possible spaces
+    pattern = r'\n?\s*(\d+)\s*\|(.+)\n?'
+    
+    # Find all matches
+    matches = re.findall(pattern, text)
+    
+    # Return the list of numbers found (as strings, could convert to int if needed)
+    return matches
+
+def clean_thelimbs(output_str):
+    if 'outputs:' in output_str:
+        start_index = output_str.index('outputs:')
+        output_str = output_str[start_index+len('outputs:'):]
+        output_str = output_str.strip()
+        
+    if 'output:' in output_str:
+        start_index = output_str.index('output:')
+        output_str = output_str[start_index+len('output:'):]
+        output_str = output_str.strip()
+        # print('refined: ', output_str)
+        
+    return output_str
+
 
 def parse_keywords_output(output_str) -> dict:
     """Parse dependency gen result string into dict"""
 
     output_str = clean_thelimbs(output_str)
-
+    
+    parsed_list = find_elements(output_str)
 
     id2tup = {}
-    for id_tup in output_str.strip().split('\n'):
-        tup_id, tup = id_tup.split('|')
+    for id_tup in parsed_list:
+        tup_id, tup = id_tup
 
         tup_id = tup_id.strip()
         tup = tup.strip()
 
-        tup = clean_tuple_str(tup)
+        tup = clean_keyword_str(tup)
 
         tup_id = int(tup_id)
 
@@ -39,10 +75,10 @@ def parse_tuple_output(output_str) -> dict:
 
     output_str = clean_thelimbs(output_str)
 
-
+    parsed_list = find_elements(output_str)
     id2tup = {}
-    for id_tup in output_str.strip().split('\n'):
-        tup_id, tup = id_tup.split('|')
+    for id_tup in parsed_list:
+        tup_id, tup = id_tup
 
         tup_id = tup_id.strip()
         tup = tup.strip()
@@ -82,23 +118,27 @@ def clean_dependency_id(dependency_id_str):
     return dependency_ids
 
 
-def clean_thelimbs(output_str):
-    if 'output:' in output_str:
-        start_index = output_str.index('output:')
-        output_str = output_str[start_index+len('output:'):]
-        output_str = output_str.strip()
-        # print('refined: ', output_str)
+def find_last_number_between_newline_and_pipe(text):
+    # Define the regex pattern strictly for numbers between \n and | with possible spaces
+    pattern = r'\n\s*(\d+)\s*\|'
+    
+    # Find all matches
+    matches = re.findall(pattern, text)
+    
+    # Return the last number found, or None if no match
+    return matches[-1] if matches else None
 
-    return output_str
 
 def parse_dependency_output(output_str) -> dict:
     """Parse dependency gen result string into dict"""
 
     output_str = clean_thelimbs(output_str)
+    
+    parsed_list = find_elements(output_str)
 
     id2dep = {}
-    for id_dep in output_str.strip().split('\n'):
-        question_id, dep = id_dep.split('|')
+    for id_dep in parsed_list:
+        question_id, dep = id_dep
 
         question_id = question_id.strip()
         dep = dep.strip()

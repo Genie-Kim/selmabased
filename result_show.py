@@ -173,7 +173,14 @@ for folder, value in origin_json.items():
         # plus data for all columns
         row_list = row_list + result_lists
         result_table.add_data(*row_list)
-    wandbrun.log({"table_key":result_table})
+wandbrun.log({"table_key":result_table})
 
 # [optional] finish the wandb run, necessary in notebooks
 wandb.finish()
+
+
+
+
+
+
+
