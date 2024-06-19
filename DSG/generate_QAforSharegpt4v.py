@@ -317,7 +317,7 @@ for folder, datadict in json_data.items():
             padding="longest",
             return_tensors="pt",
         ).input_ids
-        clip_removed_text = tokenizer.batch_decode(text_input_ids[:, 1:77])[0]
+        clip_removed_text = tokenizer.batch_decode(text_input_ids[:, :77],skip_special_tokens=True)[0]
         frontindx = len(clip_removed_text)
         frontcaption, backcaption = truncate_to_front_backward(gpt4vcaption, frontindx)
         error_list = {}

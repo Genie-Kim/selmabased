@@ -36,10 +36,12 @@ exp_results = [
     "stable-diffusion-v1-5/clip_repeat_textenc_False",
     "stable-diffusion-v1-5/clip_repeat_textenc_True",
     "stable-diffusion-v1-5/longclip_repeat_textenc_False",
-    "stable-diffusion-2/clip_repeat_textenc_False",
-    "stable-diffusion-2/clip_repeat_textenc_True",
+    "stable-diffusion-2-1/clip_repeat_textenc_False",
+    "stable-diffusion-2-1/clip_repeat_textenc_True",
 ]
 exp_result_root = "exp_results"
+# vqamodel = 'sharegpt4v7b'
+vqamodel = 'mpluglarge'
 
 
 def parse_arguments():
@@ -113,7 +115,7 @@ quanti_dict_results = {}
 for exp_result in exp_results:
     exp_result_path = os.path.join(exp_result_root, exp_result)
 
-    with open(os.path.join(quantitative_root_path,f"evalscore_{exp_result.replace('/','_')}.json"),'r') as f:
+    with open(os.path.join(quantitative_root_path,f"evalscore_{exp_result.replace('/','_')}_{vqamodel}.json"),'r') as f:
         quanti_dict_results[exp_result] = json.load(f)
         
 
@@ -134,8 +136,8 @@ for folder, value in origin_json.items():
             padding="longest",
             return_tensors="pt",
         ).input_ids
-        clip_removed_text = tokenizer.batch_decode(text_input_ids[:, 77 - 1 : -1])[0]
-        longclip_removed_text = tokenizer.batch_decode(text_input_ids[:, 248 - 1 : -1])[0]
+        clip_removed_text = tokenizer.batch_decode(text_input_ids[:, 77 - 1 : -1],skip_special_tokens=True)[0]
+        longclip_removed_text = tokenizer.batch_decode(text_input_ids[:, 248 - 1 : -1],skip_special_tokens=True)[0]
 
 
         origin_img = wandb.Image(origin_imgpath)
