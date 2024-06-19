@@ -24,7 +24,7 @@ image_path = args.image_path
 args.save_path = os.path.join(
     exp_result_path,
     "quantitative results",
-    f"evalscore_{args.exp_path.replace('/','_')}.json",
+    f"evalscore_{args.exp_path.replace('/','_')}_mpluglarge.json",
 )
 save_path = args.save_path
 
@@ -177,7 +177,7 @@ for typ, scores in output_folderagnostic.items():
 output["all_folder"]["all_type"] = global_output["total"]
 
 # Save output dictionary to CSV
-with open(os.path.join(exp_result_path,f"{model_name} output_scores.csv"), "w", newline="") as file:
+with open(os.path.join(exp_result_path,f"{model_name} output_scores_mpluglarge.csv"), "w", newline="") as file:
     writer = csv.writer(file)
     writer.writerow(["model name", "folder name", "category_detailed", "score"])
     for folder, categories in output.items():

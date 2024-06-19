@@ -40,8 +40,8 @@ exp_results = [
     "stable-diffusion-2-1/clip_repeat_textenc_True",
 ]
 exp_result_root = "exp_results"
-# vqamodel = 'sharegpt4v7b'
-vqamodel = 'mpluglarge'
+vqamodels = ['sharegpt4v7b','mpluglarge']
+# vqamodels = ['sharegpt4v7b']
 
 
 def parse_arguments():
@@ -100,8 +100,9 @@ tokenizer = pipe.tokenizer
 col_exp=[]
 for exp_result in exp_results:
     col_exp.append(exp_result+'_img')
-    col_exp.append(exp_result+'_mPlug_avg')
-    col_exp.append(exp_result+'_QA')
+    for vqamodel in vqamodels:
+        col_exp.append(exp_result+f'_{vqamodel}_avg')
+        col_exp.append(exp_result+f'_{vqamodel}_QA')
     
 columns = (
     ["data_id", "data_type", "image_path", "prompt", "clip_removed_text", "longclip_removed_text","original_image"]
@@ -112,11 +113,13 @@ result_table = wandb.Table(columns=columns)
 
 
 quanti_dict_results = {}
-for exp_result in exp_results:
-    exp_result_path = os.path.join(exp_result_root, exp_result)
+for vqamodel in vqamodels:
+    quanti_dict_results[vqamodel]={}
+    for exp_result in exp_results:
+        exp_result_path = os.path.join(exp_result_root, exp_result)
 
-    with open(os.path.join(quantitative_root_path,f"evalscore_{exp_result.replace('/','_')}_{vqamodel}.json"),'r') as f:
-        quanti_dict_results[exp_result] = json.load(f)
+        with open(os.path.join(quantitative_root_path,f"evalscore_{exp_result.replace('/','_')}_{vqamodel}.json"),'r') as f:
+            quanti_dict_results[vqamodel][exp_result] = json.load(f)
         
 
 
@@ -153,25 +156,24 @@ for folder, value in origin_json.items():
                     break
             if count==0:
                 result_path = no_image_path
-
-            score_avg_dictqa = quanti_dict_results[exp_result][folder][idx]
-            avg_score =score_avg_dictqa[0]
-            qa_dict =score_avg_dictqa[1]
-            
-            
-            QA_list = []
-            for qid,question in enumerate(question_list):
-                ans=qa_dict[str(qid+1)]
-                if ans==1:
-                    ans='yes'
-                else:
-                    ans='no'
-                QA_list.append(f"{question} : {ans}")
-            
-            
             result_lists.append(wandb.Image(os.path.join(exp_result_path,result_path)))
-            result_lists.append(avg_score)
-            result_lists.append('\n'.join(QA_list))
+            
+            for vqamodel in vqamodels:
+                score_avg_dictqa = quanti_dict_results[vqamodel][exp_result][folder][idx]
+                avg_score =score_avg_dictqa[0]
+                qa_dict =score_avg_dictqa[1]
+                
+                
+                QA_list = []
+                for qid,question in enumerate(question_list):
+                    ans=qa_dict[str(qid+1)]
+                    if ans==1:
+                        ans='yes'
+                    else:
+                        ans='no'
+                    QA_list.append(f"{question} : {ans}")
+                result_lists.append(avg_score)
+                result_lists.append('\n'.join(QA_list))
         # plus data for all columns
         row_list = row_list + result_lists
         result_table.add_data(*row_list)
