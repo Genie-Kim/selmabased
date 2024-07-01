@@ -2,6 +2,7 @@ import pandas as pd
 import string
 from typing import Any, Callable, Dict, List, Optional
 from pathlib import Path
+from parse_utils import findandclean_tuple_str
 
 import tqdm
 from pprint import pprint
@@ -501,6 +502,11 @@ def generate_dsg(id2prompts: Dict[str, Dict[str, str]],
 
 		test_prompt = datum['prompt']
 		gen_tuple = id2tuple_outputs[id]['output'].strip()
+
+		# to mitigate llama error
+		gen_tuple = findandclean_tuple_str(gen_tuple)
+		id2tuple_outputs[id]['output']=gen_tuple
+
 		input_dict['input'] = "\n".join([test_prompt, gen_tuple])
 
 		id2inputs[id] = input_dict
@@ -520,6 +526,10 @@ def generate_dsg(id2prompts: Dict[str, Dict[str, str]],
 		for id in test_ids[:1]:
 			print('id:', id)
 			pprint(id2question_outputs[id])
+	
+ 	# to mitigate llama error
+	if id2question_outputs['custom_0']['output'].count('. ')>4:
+		id2question_outputs['custom_0']['output'] = id2question_outputs['custom_0']['output'].replace('. ', ' | ')
 
 	# =====================================
 	# Task 3: Dependency generation
