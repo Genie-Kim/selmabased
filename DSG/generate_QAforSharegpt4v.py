@@ -252,31 +252,6 @@ for folder, datadict in json_data.items():
                     f.write(", \n")
                 print(f"Successfully generated questions for image {id}.\n\n\n")
             
-            # fixed = 0
-            # while fixed < 3:
-            #     try:
-            #         for part in ["total","front","back"]:
-            #             caption = output_dump_list[idx][part]["caption"]
-            #             question_dict_list = text_to_question_dictlist(caption)
-            #             output_dump_list[idx][part]["question_list"] = question_dict_list
-            #             time.sleep(6)
-            #         with open(output_json_path, "a") as f:
-            #             json.dump(output_dump_list, f, indent=4)
-            #             f.write(", \n")
-            #         print(f"Successfully generated questions for image {id}.\n\n\n")
-            #         fixed=5
-            #     except Exception as e:
-            #         if fixed == 2:
-            #             error_list[id] = {}
-            #             error_list[id]["error_msg"] = str(e)
-            #             with open(error_json_path, "a") as f:
-            #                 json.dump(error_list, f, indent=4)
-            #                 f.write(", \n")
-            #         else:
-            #             print("!!!!!!!!!Error occured. Retrying...!!!!!!!!!")
-            #         fixed += 1
-            #         time.sleep(6)
-
 # After the json file generated, you should add [,] to the beginning and end of the file.
 
 
