@@ -30,6 +30,21 @@ def find_elements(text):
     # Return the list of numbers found (as strings, could convert to int if needed)
     return matches
 
+def findandclean_tuple_str(text):
+    text = "\n"+text+"\n"
+    # Define the regex pattern strictly for numbers between \n and | with possible spaces
+    pattern = r'\n?\s*(\d+)\s*\|(.+)\n?'
+    
+    # Find all matches
+    matches = re.findall(pattern, text)
+    
+    output_str_lst =[]
+    for id_tup in matches:
+        tup_id, tup = id_tup      
+        output_str_lst.append(f"{tup_id} | {tup}")
+    # Return the list of numbers found (as strings, could convert to int if needed)
+    return '\n'.join(output_str_lst)
+
 def clean_thelimbs(output_str):
     if 'outputs:' in output_str:
         start_index = output_str.index('outputs:')

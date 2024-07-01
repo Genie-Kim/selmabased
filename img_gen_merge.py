@@ -15,6 +15,9 @@ import argparse
 from models.RepeatTextencStableDiffusion_base import (
     RepeatTextencStableDiffusionPipeline,
 )
+from models.rpg_models.RegionalDiffusion_base import RegionalDiffusionPipeline
+from models.rpg_models.RegionalDiffusion_xl import RegionalDiffusionXLPipeline
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--prompt_path", type=str,
@@ -29,6 +32,8 @@ parser.add_argument("--batch_size", type=int, default=16)
 parser.add_argument("--text_enc", type=str, default="clip")
 parser.add_argument("--repeat_textenc", action="store_true")
 parser.add_argument("--model_id", type=str, default="runwayml/stable-diffusion-v1-5")
+parser.add_argument("--pipename", type=str,choices=["regionaldiffusion", "repeattextenc", "abstractdiffusion"], default="RepeatTextenc")
+
 args = parser.parse_args()
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -65,35 +70,62 @@ if args.text_enc == "longclip":
 else:
     longclip_modelpath = None
 
+if args.pipename=="repeattextenc":
+    if "xl" in model_id:
+        print("not implemented")
+    else:        
+        pipe = RepeatTextencStableDiffusionPipeline.from_pretrained(
+            model_id,
+            torch_dtype=torch.float16,
+            cache_dir=args.cache_dir,
+            safety_checker=None,
+            repeat_textenc=args.repeat_textenc,
+            longclip_modelfile=longclip_modelpath,
+        )
+        # TODO: add seed fix option....
+        # # for match with rpg model's configuration.
+        # num_inference_steps=20,  # sampling step
+        # height=1024,
+        # width=1024,
+        # guidance_scale=7.0,
+elif args.pipename=="abstractdiffusion":
+    if "xl" in model_id:
+        print("not implemented")
 
-if "xl" in model_id:
-    print("not implemented")
+    else:        
+        pipe = RepeatTextencStableDiffusionPipeline.from_pretrained(
+            model_id,
+            torch_dtype=torch.float16,
+            cache_dir=args.cache_dir,
+            safety_checker=None,
+            repeat_textenc=args.repeat_textenc,
+            longclip_modelfile=longclip_modelpath,
+        )
+        # TODO: add seed fix option....
+        # # for match with rpg model's configuration.
+        # num_inference_steps=20,  # sampling step
+        # height=1024,
+        # width=1024,
+        # guidance_scale=7.0,
+        
+elif args.pipename=="regionaldiffusion":
+    if "xl" in model_id:
+        pipe = RegionalDiffusionXLPipeline.from_single_file("../models/anything-v3", torch_dtype=torch.float16, use_safetensors=True, variant="fp16")
 
-    pipe = RepeatTextencStableDiffusionPipeline.from_pretrained(
-        model_id,
-        torch_dtype=torch.float16,
-        cache_dir=args.cache_dir,
-        safety_checker=None,
-        repeat_textenc=args.repeat_textenc,
-    )
-    height=1024
-    width=1024
-
+    else:        
+        pipe = RegionalDiffusionPipeline.from_pretrained(
+            model_id,
+            torch_dtype=torch.float16,
+            use_safetensors=True,
+            variant="fp16",
+        )
+        # pipe.scheduler = DPMSolverMultistepScheduler.from_config(
+        #     pipe.scheduler.config, use_karras_sigmas=True
+        # )
+        # pipe.enable_xformers_memory_efficient_attention()
 else:
-    pipe = RepeatTextencStableDiffusionPipeline.from_pretrained(
-        model_id,
-        torch_dtype=torch.float16,
-        cache_dir=args.cache_dir,
-        safety_checker=None,
-        repeat_textenc=args.repeat_textenc,
-        longclip_modelfile=longclip_modelpath,
-    )
-    # TODO: add seed fix option....
-    # # for match with rpg model's configuration.
-    # num_inference_steps=20,  # sampling step
-    # height=1024,
-    # width=1024,
-    # guidance_scale=7.0,
+    raise ValueError("Invalid pipename")
+
 
 # pipe.scheduler = DPMSolverMultistepScheduler.from_config(pipe.scheduler.config)
 pipe.scheduler = DDIMScheduler.from_config(pipe.scheduler.config)
