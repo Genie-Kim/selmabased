@@ -54,8 +54,13 @@ def readimgs_savegrid(
     images = []
     for yy in range(ynum):
         xtemp=[]
-        for xx in range(xnum): 
-            xtemp.append(Image.open(inp[yy][xx]).convert('RGB'))
+        for xx in range(xnum):
+            try:
+                xtemp.append(Image.open(inp[yy][xx]).convert('RGB'))
+            except IndexError:
+                # make pil just black image with basewidth and baseheight
+                black_image = Image.new('RGB', (basewidth, baseheight), (0, 0, 0))
+                xtemp.append(black_image)
         images.append(xtemp)
     
     yaxis = []

@@ -556,13 +556,6 @@ class AstractStableDiffusionPipeline(StableDiffusionPipeline):
         self._num_timesteps = len(timesteps)
         with self.progress_bar(total=num_inference_steps) as progress_bar:
             for i, t in enumerate(timesteps):
-                ####################################################################################################
-                # for attention map store per timestep
-                if self._cross_attention_kwargs is not None:
-                    self._cross_attention_kwargs['timestep']=int(t)
-                else:
-                    self._cross_attention_kwargs={'timestep':int(t)}
-                ####################################################################################################
                 
                 if self.interrupt:
                     continue
@@ -639,6 +632,9 @@ class AstractStableDiffusionPipeline(StableDiffusionPipeline):
 if __name__ == "__main__":
     import sys
     import os
+    from tqdm import tqdm
+    import shutil
+    
     sys.path.append('../SELMA')
     from attentionmap.utils import (
         attn_maps,
@@ -700,7 +696,7 @@ if __name__ == "__main__":
         width = pipeline.unet.config.sample_size * pipeline.vae_scale_factor
         ##### 3. Process and Save attention map #####
         attn_map = preprocess(max_height=height, max_width=width)
-        folder_name = 'attn_maps/all'
+        folder_name = 'attn_maps'
         imgpath_per_token_dict = visualize_and_save_attn_map(attn_map, pipeline.tokenizer, prompt,folder_name=folder_name)
     
         outputdir = os.path.join(folder_name,'gridpicture')
@@ -710,11 +706,17 @@ if __name__ == "__main__":
         basewidth, baseheight = basesize
         margins = (5,int(baseheight/5))
         xnum=5
-        ynum=2
-        # TODO: reshape imgpath_per_token_dict={key: list} to reshape imgpath_per_token_dict={key: list with dimension ynum x xnum} 
+        ynum=4
+        
         reshaped_imgpath_per_token_dict = {}
-        for key, img_list in imgpath_per_token_dict.items():
+        arxiv_folder = os.path.join(outputdir,"original")
+        os.makedirs(arxiv_folder,exist_ok=True)
+        
+        for key, img_list in tqdm(imgpath_per_token_dict.items()):
             reshaped_img_list = [img_list[i * xnum:(i + 1) * xnum] for i in range(ynum)]
             readimgs_savegrid(reshaped_img_list,xnum=xnum, ynum=ynum, basesize=basesize,margins=margins, outputdir=outputdir)
+            for item in img_list:
+                # move the file
+                shutil.move(item, os.path.join(arxiv_folder,os.path.basename(item)))
         #############################################
     
