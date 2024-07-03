@@ -83,7 +83,7 @@ from tqdm import tqdm
 # question의 개수와 tuple, dependency 숫자가 안맞는 경우 버리기, 기타 에러나는거 버리기.
 # wikiart, share_textvqa, web-celebrity, web-landmark 먼저 전부 진행하고, coco, sam, llava는 위에 필터링 된 것에서 2000개씩 sampling해서 진행한다.
 # {'coco': 50027, 'sam': 20000, 'llava': 30000, 'wikiart': 500, 'share_textvqa': 500, 'web-celebrity': 498, 'web-landmark': 500}
-
+# coco (csw) - yonsei tm01, llava (noncsw) - jiny tm02 (이 두개는 1500개에서 바뀌면 꺼야함.), sam - kwaku tm03, wikiart, share_textvqa, web-celebrity, web-landmark - naver (wsww) tm04
 from diffusers import StableDiffusionPipeline
 import torch
 
@@ -95,11 +95,11 @@ sampled_json_path = os.path.join(
 )
 output_json_path = os.path.join(
     base_dir,
-    "sharegpt4v/noncswa_Dict_DSG_sharegpt4v_instruct_gpt4-vision_cap100k_frontback.json",
+    "sharegpt4v/wsww_Dict_DSG_sharegpt4v_instruct_gpt4-vision_cap100k_frontback.json",
 )
 error_json_path = os.path.join(
     base_dir,
-    "sharegpt4v/noncswa_Dict_DSG_sharegpt4v_instruct_gpt4-vision_cap100k_frontback_Errorlist.json",
+    "sharegpt4v/wsww_Dict_DSG_sharegpt4v_instruct_gpt4-vision_cap100k_frontback_Errorlist.json",
 )
 
 pipe = StableDiffusionPipeline.from_pretrained(
@@ -201,7 +201,7 @@ def text_to_question_dictlist(caption) -> list:
 
 
 for folder, datadict in json_data.items():
-    if folder not in ["coco", "sam", "wikiart"]:
+    if folder in ["wikiart", "share_textvqa", "web-celebrity", "web-landmark"]:
         for idx in tqdm(datadict):
             iddict = datadict[idx]
             gpt4vcaption = iddict["total"]["caption"]

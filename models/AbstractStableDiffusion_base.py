@@ -651,7 +651,7 @@ if __name__ == "__main__":
 
     cache_dir = "/home/compu/JinProjects/jinprojects/SELMA/pretrained_models"
 
-    ##### 1. Init modules #####
+    ##### for attention map 1. Init modules #####
     cross_attn_init()
     ###########################
     
@@ -670,7 +670,7 @@ if __name__ == "__main__":
     generator = torch.cuda.manual_seed_all(2468)
     
     
-    ##### 2. Replace modules and Register hook #####
+    ##### for attention map 2. Replace modules and Register hook #####
     pipeline.unet = set_layer_with_name_and_path(pipeline.unet)
     pipeline.unet = register_cross_attention_hook(pipeline.unet)
     ################################################
@@ -679,8 +679,6 @@ if __name__ == "__main__":
     original_prompt = "Two people engage in a moment of camaraderie in a vibrant park. The left person who is a person poised for action with a red frisbee is looking the right person."
     structure_prompt = 'Two people engage in a moment of camaraderie in a vibrant park. The left person who is _ is looking the right person.'
 
-    
-    
     
     prompt = structure_prompt
     
@@ -692,9 +690,10 @@ if __name__ == "__main__":
             generator = generator,
         ).images
         images[0].save(f"abstractdiffusion_testimage.jpg")
+       
+        ##### for attention map 3. Process and Save attention map #####
         height = pipeline.unet.config.sample_size * pipeline.vae_scale_factor
         width = pipeline.unet.config.sample_size * pipeline.vae_scale_factor
-        ##### 3. Process and Save attention map #####
         attn_map = preprocess(max_height=height, max_width=width)
         folder_name = 'attn_maps'
         imgpath_per_token_dict = visualize_and_save_attn_map(attn_map, pipeline.tokenizer, prompt,folder_name=folder_name)
