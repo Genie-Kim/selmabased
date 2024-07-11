@@ -95,12 +95,17 @@ sampled_json_path = os.path.join(
 )
 output_json_path = os.path.join(
     base_dir,
-    "sharegpt4v/wsww_Dict_DSG_sharegpt4v_instruct_gpt4-vision_cap100k_frontback.json",
+    "sharegpt4v/tempdict_Dict_DSG_sharegpt4v_instruct_gpt4-vision_cap100k.json",
 )
 error_json_path = os.path.join(
     base_dir,
-    "sharegpt4v/wsww_Dict_DSG_sharegpt4v_instruct_gpt4-vision_cap100k_frontback_Errorlist.json",
+    "sharegpt4v/tempdict_Dict_DSG_sharegpt4v_instruct_gpt4-vision_cap100k_Errorlist.json",
 )
+temp_json_path = os.path.join(
+    base_dir,
+    "sharegpt4v/240704_tempdict.json",
+)
+
 
 pipe = StableDiffusionPipeline.from_pretrained(
     "runwayml/stable-diffusion-v1-5",
@@ -200,9 +205,17 @@ def text_to_question_dictlist(caption) -> list:
     return question_dict_list
 
 
+with open(temp_json_path, "r") as f:
+    tempdata = json.load(f)
+
 for folder, datadict in json_data.items():
-    if folder in ["wikiart", "share_textvqa", "web-celebrity", "web-landmark"]:
-        for idx in tqdm(datadict):
+    # if folder in ["wikiart", "share_textvqa", "web-celebrity", "web-landmark"]:
+    for idx in tqdm(datadict):
+        try:
+            a = tempdata[folder][idx]
+            print(idx)
+            continue
+        except:
             iddict = datadict[idx]
             gpt4vcaption = iddict["total"]["caption"]
             frontcaption, backcaption = truncate_to_front_backward(gpt4vcaption)

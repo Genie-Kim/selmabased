@@ -137,6 +137,8 @@ class AstractStableDiffusionPipeline(StableDiffusionPipeline):
         negative_prompt_embeds: Optional[torch.FloatTensor] = None,
         lora_scale: Optional[float] = None,
         clip_skip: Optional[int] = None,
+        abstraced_prompt : Optional[str] = None,
+        pooler_output : Optional[bool] = None,
     ):
         r"""
         Encodes the prompt into text encoder hidden states.
@@ -219,23 +221,37 @@ class AstractStableDiffusionPipeline(StableDiffusionPipeline):
             if clip_skip is None:
                 prompt_embeds = self.text_encoder(text_input_ids.to(device), attention_mask=attention_mask)
                 prompt_embeds = prompt_embeds[0]
-                
-                # self.tokenizer.convert_ids_to_tokens(text_input_ids[0]) # find the word's position
-                # replace the word to clip global feature.
-                
-                subprompt = "A photo of a person poised for action with a red frisbee."
-                subtext_input_ids = self.tokenizer(
-                    subprompt,
-                    padding="max_length",
-                    max_length=self.tokenizer.model_max_length,
-                    truncation=True,
+                ####
+                test = self.tokenizer(
+                    prompt,
+                    padding="longest",
                     return_tensors="pt",
                 ).input_ids
-                subtext_embeds=self.text_encoder(subtext_input_ids.to(device), attention_mask=attention_mask)['pooler_output']
+                print(len(test[0]))
+                ####
+                if abstraced_prompt is not None:
+                    subtext_input_ids = self.tokenizer(
+                        abstraced_prompt,
+                        padding="max_length",
+                        max_length=self.tokenizer.model_max_length,
+                        truncation=True,
+                        return_tensors="pt",
+                    ).input_ids
 
-                newidx=21
-                
-                prompt_embeds[:,newidx,:]=subtext_embeds
+                    for tokenid, word in enumerate(self.tokenizer.convert_ids_to_tokens(text_input_ids[0])):
+                        if word=='_</w>':
+                            break
+                    if pooler_output:
+                        subtext_embeds=self.text_encoder(subtext_input_ids.to(device), attention_mask=attention_mask)['pooler_output']
+                        prompt_embeds[:,tokenid,:]=subtext_embeds
+                    else:
+                        subtext_embeds=self.text_encoder(subtext_input_ids.to(device), attention_mask=attention_mask)[0]
+                        for i,x in enumerate(self.tokenizer.convert_ids_to_tokens(subtext_input_ids[0])):
+                            if x=="<|endoftext|>":
+                                end_idx=i
+                                break
+                        prompt_embeds = torch.cat((prompt_embeds[:,:tokenid,:], subtext_embeds[:,1:end_idx,:], prompt_embeds[:,tokenid+1:,:]), dim=1)
+                        prompt_embeds = prompt_embeds[:,:77,:]
 
             else:
                 prompt_embeds = self.text_encoder(
@@ -500,6 +516,8 @@ class AstractStableDiffusionPipeline(StableDiffusionPipeline):
             negative_prompt_embeds=negative_prompt_embeds,
             lora_scale=lora_scale,
             clip_skip=self.clip_skip,
+            abstraced_prompt = kwargs['abstraced_prompt'] if 'abstraced_prompt' in kwargs else None,
+            pooler_output = kwargs['pooler_output'] if 'pooler_output' in kwargs else None
         )
 
         # For classifier free guidance, we need to do two forward passes.
@@ -629,11 +647,28 @@ class AstractStableDiffusionPipeline(StableDiffusionPipeline):
         return StableDiffusionPipelineOutput(images=image, nsfw_content_detected=has_nsfw_concept)
 
 
+def seed_everything(seed: Optional[int] = None, workers: bool = False) -> int:
+
+    max_seed_value = np.iinfo(np.uint32).max
+    min_seed_value = np.iinfo(np.uint32).min
+
+    assert min_seed_value <= seed <= max_seed_value, f"{seed} is not in bounds, numpy accepts from {min_seed_value} to {max_seed_value}"
+
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+
+    return seed
+
 if __name__ == "__main__":
     import sys
     import os
     from tqdm import tqdm
     import shutil
+    import copy
+    import random
+    import numpy as np
     
     sys.path.append('../SELMA')
     from attentionmap.utils import (
@@ -645,12 +680,13 @@ if __name__ == "__main__":
         visualize_and_save_attn_map
     )
     from attentionmap.make_gridpicture import readimgs_savegrid
-    
+      
     # test code
     model_id = "stabilityai/stable-diffusion-2-1"
 
     cache_dir = "/home/compu/JinProjects/jinprojects/SELMA/pretrained_models"
 
+    result_dir="ablation_results"
     ##### for attention map 1. Init modules #####
     cross_attn_init()
     ###########################
@@ -667,8 +703,9 @@ if __name__ == "__main__":
     total_steps=20
     
     pipeline.to("cuda")
-    generator = torch.cuda.manual_seed_all(2468)
-    
+    seed=2468
+    seed_everything(seed)
+    generator = torch.cuda.manual_seed_all(seed)
     
     ##### for attention map 2. Replace modules and Register hook #####
     pipeline.unet = set_layer_with_name_and_path(pipeline.unet)
@@ -676,46 +713,104 @@ if __name__ == "__main__":
     ################################################
  
 
-    original_prompt = "Two people engage in a moment of camaraderie in a vibrant park. The left person who is a person poised for action with a red frisbee is looking the right person."
-    structure_prompt = 'Two people engage in a moment of camaraderie in a vibrant park. The left person who is _ is looking the right person.'
+    # original_prompt = "Two people engage in a moment of camaraderie in a vibrant park. The left person who is a person poised for action with a red frisbee is looking the right person."
+    # original_prompt2 = "Two people engage in a moment of camaraderie in a vibrant park. The left person who is a person poised for action with a red frisbee is looking the right person."
+    # structure_prompt = 'Two people engage in a moment of camaraderie in a vibrant park. The left person who is _ is looking the right person.' 
+    # prompt = structure_prompt
+    
+    with open("models/test_prompts.txt", 'r') as f:
+        prompts = f.readlines()
+        prompts = [x.strip() for x in prompts]
+        
+    id2sentences= {}
+    for idx, prompt in enumerate(prompts):
+        id2sentences[idx]=[x.strip()+'.' for x in prompt.split('.')][:-1]
+        print(len(id2sentences[idx]))
+        print('\n'.join(id2sentences[idx]))
+    
+    for idx, sent_list in id2sentences.items():
+        # base prompt
+        imagename = f"{idx}_baseprompt.jpg"
+        copied_sent_list = copy.deepcopy(sent_list)
+        base_prompt = ' '.join(copied_sent_list)
+        prompt = base_prompt
+        
+        with torch.no_grad():
+            images = pipeline(
+                prompt=[prompt],
+                num_inference_steps=total_steps,
+                generator = generator,
+            ).images
+            images[0].save(os.path.join(result_dir,imagename))
+            
+        for sentid in range(len(sent_list)):
+            # abstract prompt
+            copied_sent_list = copy.deepcopy(sent_list)
+            abstraced_prompt = copied_sent_list[sentid]
+            copied_sent_list[sentid]="_"
+            sentence_abstract_prompt = ' '.join(copied_sent_list)
+            
+            imagename = f"{idx}_{sentid}_sentence_abstract.jpg"
+            prompt = sentence_abstract_prompt
+            with torch.no_grad():
+                images = pipeline(
+                    prompt=[prompt],
+                    num_inference_steps=total_steps,
+                    generator = generator,
+                    abstraced_prompt = abstraced_prompt,
+                    pooler_output = True
+                ).images
+                images[0].save(os.path.join(result_dir,imagename))
+        
+        
+        for sentid in range(len(sent_list)):
+            # abstract prompt
+            copied_sent_list = copy.deepcopy(sent_list)
+            abstraced_prompt = copied_sent_list[sentid]
+            copied_sent_list[sentid]="_"
+            sentence_abstract_prompt = ' '.join(copied_sent_list)
+            
+            imagename = f"{idx}_{sentid}_sentence_embedding_replace.jpg"
+            prompt = sentence_abstract_prompt
+            with torch.no_grad():
+                images = pipeline(
+                    prompt=[prompt],
+                    num_inference_steps=total_steps,
+                    generator = generator,
+                    abstraced_prompt = abstraced_prompt,
+                    pooler_output = False
+                ).images
+                images[0].save(os.path.join(result_dir,imagename))
+        
+        
+        
+        
+        
+        
+##### for attention map 3. Process and Save attention map #####
+# height = pipeline.unet.config.sample_size * pipeline.vae_scale_factor
+# width = pipeline.unet.config.sample_size * pipeline.vae_scale_factor
+# attn_map = preprocess(max_height=height, max_width=width)
+# folder_name = 'attn_maps'
+# imgpath_per_token_dict = visualize_and_save_attn_map(attn_map, pipeline.tokenizer, prompt,folder_name=folder_name)
 
-    
-    prompt = structure_prompt
-    
-    
-    with torch.no_grad():
-        images = pipeline(
-            prompt=[prompt],
-            num_inference_steps=total_steps,
-            generator = generator,
-        ).images
-        images[0].save(f"abstractdiffusion_testimage.jpg")
-       
-        ##### for attention map 3. Process and Save attention map #####
-        height = pipeline.unet.config.sample_size * pipeline.vae_scale_factor
-        width = pipeline.unet.config.sample_size * pipeline.vae_scale_factor
-        attn_map = preprocess(max_height=height, max_width=width)
-        folder_name = 'attn_maps'
-        imgpath_per_token_dict = visualize_and_save_attn_map(attn_map, pipeline.tokenizer, prompt,folder_name=folder_name)
-    
-        outputdir = os.path.join(folder_name,'gridpicture')
-        os.makedirs(outputdir,exist_ok=True)
-        
-        basesize=(width, height)
-        basewidth, baseheight = basesize
-        margins = (5,int(baseheight/5))
-        xnum=5
-        ynum=4
-        
-        reshaped_imgpath_per_token_dict = {}
-        arxiv_folder = os.path.join(outputdir,"original")
-        os.makedirs(arxiv_folder,exist_ok=True)
-        
-        for key, img_list in tqdm(imgpath_per_token_dict.items()):
-            reshaped_img_list = [img_list[i * xnum:(i + 1) * xnum] for i in range(ynum)]
-            readimgs_savegrid(reshaped_img_list,xnum=xnum, ynum=ynum, basesize=basesize,margins=margins, outputdir=outputdir)
-            for item in img_list:
-                # move the file
-                shutil.move(item, os.path.join(arxiv_folder,os.path.basename(item)))
-        #############################################
-    
+# outputdir = os.path.join(folder_name,'gridpicture')
+# os.makedirs(outputdir,exist_ok=True)
+
+# basesize=(width, height)
+# basewidth, baseheight = basesize
+# margins = (5,int(baseheight/5))
+# xnum=5
+# ynum=4
+
+# reshaped_imgpath_per_token_dict = {}
+# arxiv_folder = os.path.join(outputdir,"original")
+# os.makedirs(arxiv_folder,exist_ok=True)
+
+# for key, img_list in tqdm(imgpath_per_token_dict.items()):
+#     reshaped_img_list = [img_list[i * xnum:(i + 1) * xnum] for i in range(ynum)]
+#     readimgs_savegrid(reshaped_img_list,xnum=xnum, ynum=ynum, basesize=basesize,margins=margins, outputdir=outputdir)
+#     for item in img_list:
+#         # move the file
+#         shutil.move(item, os.path.join(arxiv_folder,os.path.basename(item)))
+#############################################
