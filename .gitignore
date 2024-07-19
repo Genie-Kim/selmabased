@@ -27,7 +27,7 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
-exp_results/
+exp_results*/
 pretrained_models/
 pretrained_model/
 datasets/

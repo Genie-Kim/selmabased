@@ -96,7 +96,7 @@ with open(docci_meta_jsonl, "r") as f:
         
 for example_id, values in tqdm(docci_id2info.items()):
     print("\n\n##################################################")
-    if 'train' not in example_id:
+    if 'train' in example_id:
         prompt = values['description']
         values['example_id'] = example_id
         

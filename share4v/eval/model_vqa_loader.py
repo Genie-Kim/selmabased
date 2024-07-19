@@ -19,10 +19,16 @@ from share4v.utils import disable_torch_init
 
 
 def split_list(lst, n):
-    """Split a list into n (roughly) equal-sized chunks"""
-    chunk_size = math.ceil(len(lst) / n)  # integer division
-    return [lst[i:i+chunk_size] for i in range(0, len(lst), chunk_size)]
+    k, m = divmod(len(lst), n)
+    return [
+        lst[i * k + min(i, m) : (i + 1) * k + min(i + 1, m)]
+        for i in range(n)
+    ]
 
+# def split_list(lst, n):
+#     """Split a list into n (roughly) equal-sized chunks"""
+#     chunk_size = math.ceil(len(lst) / n)  # integer division
+#     return [lst[i:i+chunk_size] for i in range(0, len(lst), chunk_size)]
 
 def get_chunk(lst, n, k):
     chunks = split_list(lst, n)
@@ -90,7 +96,9 @@ def eval_model(args):
     questions = get_chunk(questions, args.num_chunks, args.chunk_idx)
     answers_file = os.path.expanduser(args.answers_file)
     os.makedirs(os.path.dirname(answers_file), exist_ok=True)
-    ans_file = open(answers_file, "w")
+    
+    with open(answers_file, "w") as f:
+        print("Starting to write answers to", answers_file)
 
     if 'plain' in model_name and 'finetune' not in model_name.lower() and 'mmtag' not in args.conv_mode:
         args.conv_mode = args.conv_mode + '_mmtag'
@@ -106,13 +114,14 @@ def eval_model(args):
 
         stop_str = conv_templates[args.conv_mode].sep if conv_templates[
             args.conv_mode].sep_style != SeparatorStyle.TWO else conv_templates[args.conv_mode].sep2
-        input_ids = input_ids.to(device='cuda', non_blocking=True)
-
+        # input_ids = input_ids.to(device='cuda', non_blocking=True)
+        input_ids = input_ids.to(device='cuda')
+        
         with torch.inference_mode():
             output_ids = model.generate(
                 input_ids,
                 images=image_tensor.to(
-                    dtype=torch.float16, device='cuda', non_blocking=True),
+                    dtype=torch.float16, device='cuda'),
                 do_sample=True if args.temperature > 0 else False,
                 temperature=args.temperature,
                 top_p=args.top_p,
@@ -133,15 +142,16 @@ def eval_model(args):
             outputs = outputs[:-len(stop_str)]
         outputs = outputs.strip()
 
-        ans_id = shortuuid.uuid()
-        ans_file.write(json.dumps({"question_id": idx,
-                                   "prompt": cur_prompt,
-                                   "text": outputs,
-                                   "answer_id": ans_id,
-                                   "model_id": model_name,
-                                   "metadata": {}}) + "\n")
+        # ans_id = shortuuid.uuid()
+        with open(answers_file, "a") as ans_file:
+            ans_file.write(json.dumps({"question_id": idx,
+                                    "prompt": cur_prompt,
+                                    "text": outputs,
+                                    #    "answer_id": ans_id,
+                                    "model_id": model_name,
+                                    "metadata": {}}) + "\n")
         # ans_file.flush()
-    ans_file.close()
+    # ans_file.close()
 
 
 if __name__ == "__main__":

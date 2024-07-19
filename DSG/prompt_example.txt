@@ -1,0 +1,208 @@
+Task: given input prompts, describe each scene with skill-specific tuples.
+Do not generate same tuples again. Do not generate tuples that are not explicitly described in the prompts.
+output format: id | tuple
+
+input: A male skateboarder is trying to pull off a trick on the ramp.
+output: 1 | entity - whole (skateboarder)
+2 | entity - whole (ramp)
+3 | attribute - type (skateboarder, male)
+4 | action - (skateboarder, pull off a trick)
+5 | relation - spatial (skateboarder, ramp, on)
+
+input: A car playing soccer, digital art.
+output: 1 | entity - whole (car)
+2 | global - (digital art)
+3 | action - (car, soccer, play)
+
+input: A set of 2x2 emoji icons with happy, angry, surprised and sobbing faces. The emoji icons look like pigs. All of the pigs are wearing crowns.
+output: 1 | entity - whole (emoji icons)
+2 | other - count (emoji icons, ==4)
+3 | attribute - state (emoji icons, 2x2 grid)
+4 | attribute - type (emoji icons, pig)
+5 | attribute - state (emoji_1, happy)
+6 | attribute - state (emoji_2, angry)
+7 | attribute - state (emoji_3, surprised)
+8 | attribute - state (emoji_4, sobbing face)
+9 | entity - part (pig's crown)
+
+input: a photo of bear and dining table; dining table is below bear
+output: 1 | global - (photo)
+2 | entity - whole (bear)
+3 | entity - whole (dining table)
+4 | relation - spatial (dining table, bear, below)
+
+input: A group of children sitting in the grass with two of them holding a Frisbee .
+output: 1 | entity - whole (children)
+2 | entity - whole (grass)
+3 | entity - whole (frisbee)
+4 | attribute - state (children, sit)
+5 | relation - spatial (children, grass, in)
+6 | entity - part (two of the children)
+7 | action - (two of the children, frisbee, hold)
+
+input: the word 'START' written in chalk on a sidewalk
+output: 1 | entity - whole (word)
+2 | entity - whole (sidewalk)
+3 | other - text rendering (word, "START")
+4 | attribute - texture (word, chalk)
+5 | relation - spatial (word, sidewalk, on)
+
+input: A pear, orange, and two bananas in a wooden bowl.
+output: 1 | entity - whole (pear)
+2 | entity - whole (orange)
+3 | entity - whole (bananas)
+4 | other - count (bananas, ==2)
+5 | entity - whole (bowl)
+6 | attribute - material (bowl, wood)
+7 | relation - spatial (pear, bowl, in)
+8 | relation - spatial (orange, bowl, in)
+9 | relation - spatial (bananas, bowl, in)
+
+input: Closeup picture of the front of a clean motorcycle.
+output: 1 | entity - whole (motorcycle)
+2 | global - (closeup)
+3 | global - (picture)
+4 | attribute - state (motorcycle, clean)
+5 | entity - part (front of the motorcycle)
+
+input: a sad man with green hair
+output: 1 | entity - whole (man)
+2 | entity - part (man's hair)
+3 | attribute - state (man, sad)
+4 | attribute - color (man's hair, green)
+
+input: A commercial airplane with propellers flying through the air.
+output: 1 | entity - whole (airplane)
+2 | entity - part (airplane's propellers)
+3 | action - (airplane, air, fly through)
+
+input: A little boy grips a soccer ball in his arms surrounded by other youth soccer players.
+output: 1 | entity - whole (boy)
+2 | entity - whole (ball)
+3 | entity - whole (soccer players)
+4 | entity - part (boy's arms)
+5 | entity - scale (boy, little)
+6 | attribute - type (ball, soccer)
+7 | attribute - state (soccer players, youth)
+8 | relation - spatial (boy, ball, grip in his arms)
+9 | relation - spatial (boy, soccer players, surrounded by)
+
+input: A traffic light and a signpost at a crossroads intersection near a waterway.
+output: 1 | entity - whole (traffic light)
+2 | entity - whole (signpost)
+3 | entity - whole (crossroads intersection)
+4 | entity - whole (waterway)
+5 | relation - spatial (traffic light, crossroads intersection, at)
+6 | relation - spatial (signpost, crossroads intersection, at)
+7 | relation - spatial (traffic light, waterway, near)
+8 | relation - spatial (signpost, waterway, near)
+9 | relation - spatial (crossroads intersection, waterway, near)
+
+input: a photo of dining table and traffic light; traffic light is below dining table
+output: 1 | global - (photo)
+2 | entity - whole (dining table)
+3 | entity - whole (traffic light)
+4 | relation - spatial (traffic light, dining table, below)
+
+input: A realistic photo of a Pomeranian dressed up like a 1980s professional wrestler with neon green and neon orange face paint and bright green wrestling tights with bright orange boots.
+output: 1 | global - (photo)
+2 | entity - whole (Pomeranian)
+3 | global - (realistic)
+4 | entity - part (Pomeranian's costume)
+5 | attribute - type (Pomeranian's costume, 1980s professional wrestler)
+6 | entity - part (Pomeranian's costume's wrestling tights)
+7 | entity - part (Pomeranian's costume's wrestling tights' boots)
+8 | entity - part (Pomeranian's facepaint)
+9 | attribute - color (Pomeranian's facepaint, neon green)
+10 | attribute - color (Pomeranian's facepaint, neon orange)
+11 | attribute - color (Pomeranian's costume's wrestling tights, bright green)
+12 | attribute - color (Pomeranian's costume's wrestling tights' boots, bright orange)
+
+input: a four-piece band on a stage in front of a small crowd
+output: 1 | entity - whole (band)
+2 | entity - whole (stage)
+3 | entity - whole (crowd)
+4 | other - count (band members, ==4)
+5 | attribute - shape (crowd, small)
+6 | relation - spatial (band, stage, on)
+7 | relation - spatial (band, crowd, in front of)
+8 | relation - spatial (stage, crowd, in front of)
+
+input: two laptops, a mouse cord, and a monitor
+output: 1 | entity - whole (laptops)
+2 | other - count (laptops, ==2)
+3 | entity - whole (mouse coord)
+4 | entity - whole (monitor)
+
+input: A red motorcycle parked by paint chipped doors.
+output: 1 | entity - whole (motorcycle)
+2 | entity - whole (doors)
+3 | attribute - color (motorcycle, red)
+4 | attribute - state (door, paint chipped)
+5 | relation - spatial (motorcycle, door, next to)
+6 | attribute - state (motorcycle, parked)
+
+input: A cube made of denim. A cube with the texture of denim.
+output: 1 | entity - whole (cube)
+2 | attribute - material (cube, denim)
+3 | attribute - texture (cube, denim)
+
+input: an espresso machine that makes coffee from human souls
+output: 1 | entity - whole (espresso machine)
+2 | entity - whole (coffee)
+3 | entity - whole (human souls)
+4 | action - (espresso machine, coffee, make)
+5 | attribute - material (coffee, human souls)
+
+input: Three people standing next to an elephant along a river.
+output: 1 | entity - whole (people)
+2 | other - count (people, ==3)
+3 | entity - whole (elephant)
+4 | entity - whole (river)
+5 | attribute - state (people, stand)
+6 | relation - spatial (people, elephant, next to)
+7 | relation - spatial (people, river, next to)
+8 | relation - spatial (elephant, river, next to)
+
+input: Aerial view of downtown Manhattan, but with Millennium Wheel next to the Statue of Liberty. The Great Pyramid is on a sandy island near the buildings.
+output: 1 | entity - (downtown Manhattan)
+2 | entity - (Millennium Wheel)
+3 | entity - (the Statue of the Liberty)
+4 | entity - (the Great Pyramid)
+5 | entity - (island)
+6 | entity - (buildings)
+7 | global - (aerial view)
+8 | attribute - texture (island, sandy)
+9 | relation - spatial (Millennium Wheel, the Statue of Liberty, next to)
+10 | relation - spatial (the Great Pyramid, island, on)
+11 | relation - spatial (the Great Pyramid, buildings, near)
+
+input: A laptop with external keyboard, mouse, phone and photo on a desk.
+output: 1 | entity - whole (laptop)
+2 | entity - whole (keyboard)
+3 | entity - whole (mouse)
+4 | entity - whole (phone)
+5 | entity - whole (photo)
+6 | entity - whole (desk)
+7 | attribute - type (keyboard, external)
+8 | relation - spatial (laptop, desk, on)
+9 | relation - spatial (keyboard, desk, on)
+10 | relation - spatial (mouse, desk, on)
+11 | relation - spatial (phone, desk, on)
+12 | relation - spatial (photo, desk, on)
+
+input: A white slope covers the background, while the foreground features a grassy slope with several rams grazing and one measly and underdeveloped evergreen in the foreground.
+output: 1 | entity - whole (slopes)
+2 | other - count (slopes, ==2)
+3 | entity - whole (rams)
+4 | entity - whole (evergreen)
+5 | attribute - color (slope_1, white)
+6 | attribute - texture (slope_2, grassy)
+7 | attribute - state (evergreen, measly and underdeveloped)
+8 | relation - spatial (slope_1, background, in)
+9 | relation - spatial (slope_2, foreground, in)
+10 | relation - spatial (rams, slope_2, on)
+11 | attribute - state (rams, graze)
+
+input: The image presents a minimalist art piece, characterized by its simplicity and use of a limited color palette. At the center of the canvas, there's a single rectangular shape, which is divided equally into two halves along the horizontal axis. The color of this shape is a light beige, providing a subtle contrast against the slightly darker beige background. The art style is abstract, and the genre is minimalism, both of which are evident in the clean lines and simple geometric form. The overall composition exudes a sense of balance and harmony, typical of minimalist art.
+output: 

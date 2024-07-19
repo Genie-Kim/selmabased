@@ -13,20 +13,20 @@ IFS=',' read -ra GPULIST <<< "$gpu_list"
 
 CHUNKS=${#GPULIST[@]}
 
-
 EXP_PATH=${1}
 DATA_DIR=$PWD
 EXP_ROOT="exp_results"
-MODEL_NAME=${EXP_PATH//"/"/"_"}
-Q_JSONPATH=${DATA_DIR}/datasets/ShareGPT4V/data/sharegpt4v/Dict_DSG_nondupid_generated_sharegpt4v_instruct_gpt4-vision_cap100k.json
+MODEL_NAME=${EXP_PATH//"/"/"&"}
+Q_JSONPATH="datasets/docci/docci_metadata.jsonlines"
 
 # make question file
 python DSG/make_questionfile2share4v.py --exp_path ${EXP_PATH} \
 --questionjsonpath ${Q_JSONPATH} \
---exp_root ${EXP_ROOT}
+--splits "test" "qual_test" "qual_dev"
 
 CKPT="Lin-Chen/ShareGPT4V-7B"
-SPLIT=${MODEL_NAME}_questionFORshare4veval
+SPLIT="${MODEL_NAME}&questionFORshare7Beval"
+OUTDIR="${MODEL_NAME}&AnswerOFshare7Beval"
 
 # if you want to kill : alkil model_vqa_loader
 for IDX in $(seq 0 $((CHUNKS-1))); do
@@ -34,7 +34,7 @@ for IDX in $(seq 0 $((CHUNKS-1))); do
         --model-path ${CKPT} \
         --question-file $EXP_ROOT/$SPLIT.jsonl \
         --image-folder $DATA_DIR \
-        --answers-file $EXP_ROOT/$SPLIT/${CHUNKS}_${IDX}.jsonl \
+        --answers-file $EXP_ROOT/$OUTDIR/${CHUNKS}_${IDX}.jsonl \
         --num-chunks $CHUNKS \
         --chunk-idx $IDX \
         --temperature 0 \
@@ -43,19 +43,19 @@ done
 
 wait
 
-output_file=$EXP_ROOT/$SPLIT/merge.jsonl
+output_file=$EXP_ROOT/$OUTDIR/merge.jsonl
 
 # Clear out the output file if it exists.
 > "$output_file"
 
 # Loop through the indices and concatenate each file.
 for IDX in $(seq 0 $((CHUNKS-1))); do
-    cat $EXP_ROOT/$SPLIT/${CHUNKS}_${IDX}.jsonl >> "$output_file"
+    cat $EXP_ROOT/$OUTDIR/${CHUNKS}_${IDX}.jsonl >> "$output_file"
 done
 
 
 
-python DSG/make_answerfile2score.py --answer_file ${output_file} \
---org_jsonpath ${Q_JSONPATH} \
---exp_root ${EXP_ROOT} \
---exp_path ${EXP_PATH}
+# python DSG/make_answerfile2score.py --answer_file ${output_file} \
+# --org_jsonpath ${Q_JSONPATH} \
+# --exp_root ${EXP_ROOT} \
+# --exp_path ${EXP_PATH}

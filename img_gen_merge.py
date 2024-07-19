@@ -20,19 +20,49 @@ from models.rpg_models.RegionalDiffusion_xl import RegionalDiffusionXLPipeline
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--prompt_path", type=str,
-    default="datasets/ShareGPT4V/data/sharegpt4v/Dict_DSG_nondupid_generated_sharegpt4v_instruct_gpt4-vision_cap100k.json",
+parser.add_argument(
+    "--prompt_path",
+    type=str,
+    default="datasets/docci/docci_descriptions.jsonlines",
 )
-parser.add_argument("--output_path", type=str, default="exp_results")
-parser.add_argument("--cache_dir", type=str,
-    default="/home/compu/JinProjects/jinprojects/SELMA/pretrained_models",
+parser.add_argument(
+    "--summary_path",
+    type=str,
+    default="datasets/docci/summary_docci_testqual.jsonlines"
 )
-parser.add_argument("--eval_benchmark", type=str, default="DSG")
+parser.add_argument("--exp_path", type=str, default="exp_results")
+parser.add_argument(
+    "--cache_dir",
+    type=str,
+    default="pretrained_models",
+)
 parser.add_argument("--batch_size", type=int, default=16)
-parser.add_argument("--text_enc", type=str, default="clip")
-parser.add_argument("--repeat_textenc", action="store_true")
 parser.add_argument("--model_id", type=str, default="runwayml/stable-diffusion-v1-5")
-parser.add_argument("--pipename", type=str,choices=["regionaldiffusion", "repeattextenc", "abstractdiffusion"], default="RepeatTextenc")
+parser.add_argument(
+    "--pipename",
+    type=str,
+    choices=[
+        "regionaldiffusion",
+        "longclip",
+        "clip_repeattext",
+        "clip_normal",
+        "clip_summary",
+        "abstractdiffusion",
+    ],
+    default="clip_normal",
+)
+parser.add_argument(
+    "--splits",
+    nargs="+",
+    type=str,
+    choices=[
+        "train",
+        "test",
+        "qual_test",
+        "qual_dev",
+    ],
+    default=["test","qual_test","qual_dev"],
+)
 
 args = parser.parse_args()
 
@@ -40,18 +70,17 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 args.device = device
 
 # model_id = "stabilityai/stable-diffusion-2-1"
+# model_id = "runwayml/stable-diffusion-v1-5"
+
 # model_id = "stabilityai/stable-diffusion-2"
 # model_id = "stabilityai/stable-diffusion-xl-base-1.0"
 # model_id = "CompVis/stable-diffusion-v1-4"
-# model_id = "runwayml/stable-diffusion-v1-5"
 
 model_id = args.model_id
-output_foldername = args.text_enc + f"_repeat_textenc_{args.repeat_textenc}"
-output_path = os.path.join(args.output_path, model_id.split("/")[-1], output_foldername)
-args.output_path = output_path
 batch_size = args.batch_size
-seed=2468
-args.seed = seed
+args.seed = 2468
+
+args.output_path = os.path.join(args.exp_path, model_id.split("/")[-1], f"{args.pipename}_output")
 
 sorted_args = sorted(vars(args).items())
 for arg, value in sorted_args:
@@ -59,128 +88,145 @@ for arg, value in sorted_args:
     print(f"\033[34m{arg}\033[0m: {value}")
 input("Press Enter to continue...")
 
-# TODO: XL 구현
-assert (
-    model_id != "stabilityai/stable-diffusion-2" or args.text_enc != "longclip"
-), "LongCLIP model is not supported SD v2.1"
+os.makedirs(args.output_path, exist_ok=True)
+for split in args.splits:
+    os.makedirs(os.path.join(args.output_path,split),exist_ok=True)
 
-if args.text_enc == "longclip":
-    longclip_modelpath = os.path.join(args.cache_dir, "LongCLIP/longclip-L.pt")
 
-else:
-    longclip_modelpath = None
+if args.pipename in ["longclip","clip_repeattext","clip_normal","clip_summary"]:
 
-if args.pipename=="repeattextenc":
+    if args.pipename == "longclip":
+        assert model_id != "stabilityai/stable-diffusion-2", "LongCLIP model is not supported SD v2.1"
+        longclip_modelpath = os.path.join(args.cache_dir, "LongCLIP/longclip-L.pt")
+    else:
+        longclip_modelpath = None
+    
+    if args.pipename == "clip_repeattext":
+        repeat_textenc = True
+    else:
+        repeat_textenc = False
+    
+    
     if "xl" in model_id:
+        # TODO: XL 구현
         print("not implemented")
-    else:        
+    else:
         pipe = RepeatTextencStableDiffusionPipeline.from_pretrained(
             model_id,
             torch_dtype=torch.float16,
             cache_dir=args.cache_dir,
             safety_checker=None,
-            repeat_textenc=args.repeat_textenc,
+            repeat_textenc=repeat_textenc,
             longclip_modelfile=longclip_modelpath,
         )
-        # TODO: add seed fix option....
-        # # for match with rpg model's configuration.
-        # num_inference_steps=20,  # sampling step
-        # height=1024,
-        # width=1024,
-        # guidance_scale=7.0,
-elif args.pipename=="abstractdiffusion":
-    if "xl" in model_id:
-        print("not implemented")
-
-    else:        
-        pipe = RepeatTextencStableDiffusionPipeline.from_pretrained(
-            model_id,
-            torch_dtype=torch.float16,
-            cache_dir=args.cache_dir,
-            safety_checker=None,
-            repeat_textenc=args.repeat_textenc,
-            longclip_modelfile=longclip_modelpath,
-        )
-        # TODO: add seed fix option....
         # # for match with rpg model's configuration.
         # num_inference_steps=20,  # sampling step
         # height=1024,
         # width=1024,
         # guidance_scale=7.0,
         
-elif args.pipename=="regionaldiffusion":
+elif args.pipename in ["abstractdiffusion"]:
     if "xl" in model_id:
-        pipe = RegionalDiffusionXLPipeline.from_single_file("../models/anything-v3", torch_dtype=torch.float16, use_safetensors=True, variant="fp16")
+        print("not implemented")
 
-    else:        
+    else:
+        pipe = RepeatTextencStableDiffusionPipeline.from_pretrained(
+            model_id,
+            torch_dtype=torch.float16,
+            cache_dir=args.cache_dir,
+            safety_checker=None,
+            repeat_textenc=args.repeat_textenc,
+            longclip_modelfile=longclip_modelpath,
+        )
+        # TODO: add seed fix option....
+        # # for match with rpg model's configuration.
+        # num_inference_steps=20,  # sampling step
+        # height=1024,
+        # width=1024,
+        # guidance_scale=7.0,
+
+elif args.pipename == "regionaldiffusion":
+    if "xl" in model_id:
+        pipe = RegionalDiffusionXLPipeline.from_single_file(
+            "../models/anything-v3",
+            torch_dtype=torch.float16,
+            use_safetensors=True,
+            variant="fp16",
+        )
+
+    else:
         pipe = RegionalDiffusionPipeline.from_pretrained(
             model_id,
             torch_dtype=torch.float16,
             use_safetensors=True,
             variant="fp16",
         )
-        # pipe.scheduler = DPMSolverMultistepScheduler.from_config(
-        #     pipe.scheduler.config, use_karras_sigmas=True
-        # )
-        # pipe.enable_xformers_memory_efficient_attention()
 else:
     raise ValueError("Invalid pipename")
 
 
 # pipe.scheduler = DPMSolverMultistepScheduler.from_config(pipe.scheduler.config)
 pipe.scheduler = DDIMScheduler.from_config(pipe.scheduler.config)
+num_inference_steps = 50
 pipe.set_progress_bar_config(disable=True)
 pipe.to(device)
 
-data_all = dict()
 
-with open(args.prompt_path) as f:
-    data = json.load(f)
-f.close()
-
-if not os.path.exists(output_path):
-    os.makedirs(output_path)
+split2ids={}
+with open(args.prompt_path, "r") as f:
+    for line in f:
+        item = json.loads(line)
+        split = item.pop("split")
+        key = item.pop("example_id")
+        if split not in split2ids:
+            split2ids[split] = {}
+        split2ids[split][key] = item
+        
+id2summary = {}
+with open(args.summary_path, "r") as f:
+    for line in f:
+        item = json.loads(line)
+        key = item.pop("example_id")
+        id2summary[key] = item
 
 ##############
 
 prompts = []
-names = []
-generator = torch.cuda.manual_seed_all(seed)
-for folder, data_dict in tqdm(data.items()):
-    count = 0
-    data_len = len(data_dict)
-    for imageid, value in tqdm(data_dict.items()):
-        prompt = value["gpt4vcaption"]
-        filename = os.path.basename(value["imagepath"])
-        name = imageid + os.path.splitext(filename)[-1]
-        prompts.append(prompt)
-        names.append(name)
-        count += 1
-
-        if len(prompts) == batch_size or data_len-count < data_len%batch_size:
-            images = pipe(
-                prompts,
-                num_inference_steps=50,
-                generator = generator
-                # height=height,
-                # width=width,
-            ).images
-            print(len(images))
-            a = images[0]
-            for j, img in enumerate(images):
-                img.save(os.path.join(output_path, f"{names[j]}"))
-                # copy the image from the imagepath to the output path
-                # shutil.copy(imagepath, os.path.join(output_path, f"{names[j]}_original.jpg"))
-
-            prompts = []
-            names = []
+filenames = []
+generator = torch.cuda.manual_seed_all(args.seed)
+for split, id2datas in tqdm(split2ids.items()):
+    
+    if split in args.splits:
+        output_foldername=os.path.join(args.output_path,split)
+        count = 0
+        data_len = len(id2datas)
+        for example_id, value in tqdm(id2datas.items()):
+            if args.pipename in ["clip_summary"] and id2summary[example_id]['long_bool']:
+                prompt = id2summary[example_id]['summary'] # if long, use summary
+            else:
+                prompt = value["description"]
+            filename = value["image_file"]
             
-        # if count > 100:
-        #     break
+            prompts.append(prompt)
+            filenames.append(filename)
+            
+            count += 1
+            if len(prompts) == batch_size or data_len - count < data_len % batch_size:
+                images = pipe(
+                    prompts,
+                    num_inference_steps=num_inference_steps,
+                    generator=generator,
+                    # height=height,
+                    # width=width,
+                ).images
+                for j, img in enumerate(images):
+                    img.save(os.path.join(output_foldername, f"{filenames[j]}"))
 
+                prompts = []
+                filenames = []
 
-
-
+            # if count > 100:
+            #     break
 
 
 #############

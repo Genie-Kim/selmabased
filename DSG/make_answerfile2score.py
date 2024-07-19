@@ -8,10 +8,10 @@ import csv
 # Function to parse arguments
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Process dataset JSON path.')
-    parser.add_argument('--answer_file', type=str, default="exp_results/stable-diffusion-2-1_clip_repeat_textenc_False_questionFORshare4veval/1_0 copy.jsonl", help='Path to the dataset JSON file')
-    parser.add_argument('--org_jsonpath', type=str, default="datasets/ShareGPT4V/data/sharegpt4v/Dict_DSG_nondupid_generated_sharegpt4v_instruct_gpt4-vision_cap100k.json", help='Path to the experiment results file')
+    parser.add_argument('--answer_file', type=str, required=True, help='Path to the dataset JSON file')
+    parser.add_argument('--org_jsonpath', type=str, default="datasets/docci/docci_metadata.jsonlines", help='Path to the experiment results file')
     parser.add_argument('--exp_root', type=str, default="exp_results", help='Path to the experiment results file')
-    parser.add_argument('--exp_path', type=str, default="stable-diffusion-2-1/clip_repeat_textenc_False", help='Path to the model file')
+    parser.add_argument('--exp_path', type=str, required=True, help='Path to the model file')
     return parser.parse_args()
 
 # Main function
@@ -23,23 +23,26 @@ def main():
         # Print argument names in blue and values in green for clear differentiation
         print(f"\033[34m{arg}\033[0m: {value}")
     
-    exp_path = args.exp_path
-    exp_root = args.exp_root
-    model_name = exp_path.replace('/','_')
+    model_name = args.exp_path.replace('/','&')
     
-    save_name = f"evalscore_{model_name}_sharegpt4v7B.json"
-    save_path = os.path.join(exp_root,save_name)
+    save_name = f"evalscore&{model_name}&sharegpt4v7B.json"
+    save_path = os.path.join(args.exp_root,save_name)
 
     # Load the JSON data
-    with open(args.org_jsonpath, 'r') as file:
-        data_all = json.load(file)
+    docci_id2meta={}
+    with open(args.org_jsonpath, "r") as f:
+        for line in f:
+            item = json.loads(line)
+            key = item.pop("example_id")
+            docci_id2meta[key] = item
+            
     
     answers = [json.loads(q) for q in open(
         os.path.expanduser(args.answer_file), "r")]
     
     answers_qid2ans = {q["question_id"]: q["text"].split(' ')[0].lower() for q in answers}
     
-    
+    # TODO: Not done following part.  exp_results/stable-diffusion-2-1&clip_normal_output&&AnswerOFshare7Beval/merge.jsonl
     results = dict()
     for folder, folderdict in data_all.items():
         results[folder] = dict()
