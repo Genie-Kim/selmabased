@@ -1,0 +1,9 @@
+{"keywords": "clouds", "proposition_id": "1", "dependency": "0", "category_broad": "entity", "category_detailed": "whole", "question_natural_language": "Are there clouds?"}
+{"keywords": "large clouds, ==2", "proposition_id": "2", "dependency": "1", "category_broad": "other", "category_detailed": "count", "question_natural_language": "Are there two large clouds?"}
+{"keywords": "sky", "proposition_id": "3", "dependency": "0", "category_broad": "entity", "category_detailed": "whole", "question_natural_language": "Is there a sky?"}
+{"keywords": "sky, blue", "proposition_id": "4", "dependency": "3", "category_broad": "attribute", "category_detailed": "color", "question_natural_language": "Is the sky blue?"}
+{"keywords": "large clouds, largest", "proposition_id": "5", "dependency": "1", "category_broad": "attribute", "category_detailed": "state", "question_natural_language": "Are the large clouds the largest?"}
+{"keywords": "large clouds, bottom left, in", "proposition_id": "6", "dependency": "1", "category_broad": "relation", "category_detailed": "spatial", "question_natural_language": "Are the large clouds at the bottom left?"}
+{"keywords": "large clouds, bottom right, in", "proposition_id": "7", "dependency": "1", "category_broad": "relation", "category_detailed": "spatial", "question_natural_language": "Are the large clouds at the bottom right?"}
+{"keywords": "central clouds, central portion, in", "proposition_id": "8", "dependency": "3", "category_broad": "relation", "category_detailed": "spatial", "question_natural_language": "Are the central clouds in the central portion?"}
+{"keywords": "central clouds, spread apart", "proposition_id": "9", "dependency": "1", "category_broad": "attribute", "category_detailed": "state", "question_natural_language": "Are the central clouds spread apart?"}

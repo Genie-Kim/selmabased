@@ -21,7 +21,7 @@ def parse_argments():
     parser.add_argument("--worker_num_pergpu", type=int, default=7)
     parser.add_argument("--gpu_num", nargs="+",type=str, default=["0"])
     parser.add_argument("--cache_dir", type=str, default="pretrained_models")
-    parser.add_argument('--questionjsonpath', type=str, default="datasets/docci/docci_metadata.jsonlines", help='Path to the dataset JSON file')
+    parser.add_argument('--questionjsonpath', type=str, default="docci_meta_errorfix/docci_metadata_refined.jsonlines", help='Path to the dataset JSON file')
     parser.add_argument(
         "--splits",
         nargs="+",
@@ -41,8 +41,7 @@ def parse_argments():
         "quantitative results")
     os.makedirs(quantipath, exist_ok=True)
     
-    args.save_path = os.path.join(quantipath,f"evalscore&{args.exp_path.replace('/','&')}&mpluglarge.json",
-    )
+    args.save_path = os.path.join(quantipath,f"evalscore&{args.exp_path.replace('/','&')}&mpluglarge_origin.json")
 
     os.environ["TRANSFORMERS_CACHE"] = args.cache_dir
     os.environ["MODELSCOPE_CACHE"] = args.cache_dir
@@ -139,107 +138,154 @@ if __name__ == "__main__":
     
     with open(answerpath, "w") as f:
         json.dump(answers_dict, f, indent=4)
-    f.close()
 
-    # # =====================================
-    # # Task 2: convert answer to scores (with dsg calculation)
-    # # =====================================
+    # =====================================
+    # Task 2: convert answer to scores (with dsg calculation)
+    # =====================================
 
-    # results = dict()    
 
-    # for example_id, values in tqdm(docci_id2meta.items()):
-    #     split = '_'.join(example_id.split('_')[:-1])
-        
-    #     if split in args.splits:
-    #         question_all_sentences = values['dsg']['question']
-    #         for sentence_id, ques_info in question_all_sentences.items():
-    #             questions = ques_info['question']
-    #             if len(questions)==0:
-    #                 continue
-    #             else:
-    #                 id2dependency = ques_info['dependency']
-    #                 id2scores = dict()
-    #                 for question_id,question in questions.items():
-    #                     answer_key = f"{example_id}&{sentence_id}&{question_id}"
-    #                     answer = answers_dict[answer_key]
-    #                     id2scores[question_id] = float("yes" in answer)
-    #                     id2dependency[question_id] = [
-    #                         xx.strip() for xx in str(id2dependency[question_id]).split(",")
-    #                     ]
-
-    #                 for id, parent_ids in id2dependency.items():
-    #                     any_parent_answered_no = False
-    #                     for parent_id in parent_ids:
-    #                         if parent_id == "0":
-    #                             continue
-    #                         if parent_id in id2scores and id2scores[parent_id] == 0:
-    #                             any_parent_answered_no = True
-    #                             break
-    #                     if any_parent_answered_no:
-    #                         id2scores[id] = 0  # 부모 중 하나라도 no를 선택했으면 자식도 no로 처리
-
-    #                 average_score = sum(id2scores.values()) / len(id2scores) # sentence average score
-    #                 sentence_key = f"{example_id}&{sentence_id}"
-    #                 results[sentence_key] = [average_score, id2scores]
-
-    # with open(args.save_path, "w") as f:
-    #     json.dump(results, f)
-    # f.close()
-
-    # # =====================================
-    # # Task 3: refine the scores
-    # # =====================================
-
-    # # with open(args.save_path, "r") as f:
-    # #     score_data = json.load(f)
-    # # f.close()
-
-    # results_dict = dict()
-    # for sentence_key, score_list in results.items():
-    #     example_id= sentence_key.split("&")[0]
-    #     sentence_id= sentence_key.split("&")[1]
-        
-    #     sentence_dict = docci_id2meta[example_id]['dsg']['question'][sentence_id]
-    #     sentence = sentence_dict['prompt']
-    #     for qid,question in sentence_dict['question']:
-    #         qid_tuple = sentence_dict['tuple'][qid]
-    #         category_broad = qid_tuple.split("-")[0].strip()
-            
-    #         score = score_list[1][qid]
-    #         if category_broad not in results_dict:
-    #             results_dict[category_broad] = [score]
-    #         else:
-    #             results_dict[category_broad].append(score)
-
-    # global_output = dict()
-    # output_folderagnostic = dict()
-    # output = dict()
-
-    # all = 0
-    # count = 0
-    # # folder별 category_detailed(k)별 평균이 나옴.
-    # for k, v in results_dict.items():
-    #     output[k] = np.mean(v)
-    #     all += np.sum(v)
-    #     count += len(v)
-    #     if k not in output_folderagnostic:
-    #         output_folderagnostic[k] = v
-    #     else:
-    #         output_folderagnostic[k].extend(v)
-    # output["all_type"] = all / count
-      
-    # model_name = args.exp_path.replace("/", "&")
-
-    # csv_path = os.path.join(
+    # answerpath = os.path.join(
     #     exp_root_path,
     #     "quantitative results",
-    #     f"{model_name}_scores_mpluglarge.csv",
-    # )
+    #     f"answersdict&{args.exp_path.replace('/','&')}&mpluglarge.json")
+    
+    # with open(answerpath, "r") as f:
+    #     answers_dict = json.load(f)
+    
+    results = dict()    
 
-    # # Save output dictionary to CSV
-    # with open(csv_path, "w", newline="") as file:
-    #     writer = csv.writer(file)
-    #     writer.writerow(["model name", "folder name", "category_detailed", "score"])
-    #     for folder, categories in output.items():
-    #         for category, score in categories.items():
-    #             writer.writerow([model_name, folder, category, score])
+    for example_id, values in tqdm(docci_id2meta.items()):
+        split = '_'.join(example_id.split('_')[:-1])
+        
+        if split in args.splits:
+            question_all_sentences = values['dsg']['question']
+            for sentence_id, sent_dict in question_all_sentences.items():
+                questions = sent_dict['question']
+                if len(questions)==0:
+                    continue
+                else:
+                    id2dependency = sent_dict['dependency']
+                    id2scores = dict()
+                    try:
+                        for question_id,question in questions.items():
+                            answer_key = f"{example_id}&{sentence_id}&{question_id}"
+                            answer = answers_dict[answer_key]
+                            id2scores[question_id] = float("yes" in answer)
+
+                        for id, parent_ids in id2dependency.items():
+                            any_parent_answered_no = False
+                            for parent_id in parent_ids:
+                                if parent_id == "0":
+                                    continue
+                                if parent_id in id2scores and id2scores[parent_id] == 0:
+                                    any_parent_answered_no = True
+                                    break
+                            if any_parent_answered_no:
+                                id2scores[id] = 0  # 부모 중 하나라도 no를 선택했으면 자식도 no로 처리
+
+                        average_score = sum(id2scores.values()) / len(id2scores) # sentence average score
+                        sentence_key = f"{example_id}&{sentence_id}"
+                        results[sentence_key] = [average_score, id2scores]
+                    except:
+                        print(f"error in {example_id}&{sentence_id}")
+                        continue
+
+    # SAVE score file.
+    with open(args.save_path, "w") as f:
+        json.dump(results, f)
+
+    # =====================================
+    # Task 3: refine the scores
+    # =====================================
+
+    # with open(args.save_path, "r") as f:
+    #     score_data = json.load(f)
+    # f.close()
+
+    score_summ = dict()
+    for example_id, values in tqdm(docci_id2meta.items()):
+        split = '_'.join(example_id.split('_')[:-1])
+        if split not in score_summ:
+            score_summ[split]={}
+        if 'dsg' in values:
+            for sent_id, sent_info in docci_id2meta[example_id]['dsg']['question'].items():
+                score_key = f"{example_id}&{sent_id}"
+                
+                for qid, question in sent_info['question'].items():
+                    cat_broad = sent_info['cat_broad'][qid]
+                    cat_detail = sent_info['cat_detail'][qid]
+                    if cat_broad not in score_summ[split]:
+                        score_summ[split][cat_broad]={}
+                    if cat_detail not in score_summ[split][cat_broad]:
+                        score_summ[split][cat_broad][cat_detail]=[]
+                    
+                    question_score = results[score_key][1][qid]
+                    score_summ[split][cat_broad][cat_detail].append(question_score)
+                    
+    output_csv = dict()
+    for split, cat_broad_dict in score_summ.items():
+        all = 0
+        count = 0
+        for cat_braod, cat_detail_dict in cat_broad_dict.items():
+            cat_broad_all=0
+            cat_broad_count=0
+            for cat_detail, values in cat_detail_dict.items():
+                csv_key = f"{split}&{cat_braod}&{cat_detail}"
+                output_csv[csv_key] = np.mean(values)
+                cat_broad_all += np.sum(values)
+                cat_broad_count += len(values)
+                all += np.sum(values)
+                count += len(values)
+            csv_key = f"{split}&{cat_braod}&agnostic"
+            output_csv[csv_key] = cat_broad_all / cat_broad_count
+        csv_key=f"{split}&agnostic&agnostic"
+        output_csv[csv_key] = all / count
+                
+                
+                
+    model_name = args.exp_path.replace("/", "&")
+
+    csv_path = os.path.join(
+        exp_root_path,
+        "quantitative results",
+        f"evalscore&{model_name}&mpluglarge_summary.csv",
+    )
+
+    # Save output dictionary to CSV
+    with open(csv_path, "w", newline="") as file:
+        writer = csv.writer(file)
+        writer.writerow(["model name", "split", "category_broad", "category_detailed", "score"])
+        for csv_key, score in output_csv.items():
+            split = csv_key.split('&')[0]
+            cat_broad = csv_key.split('&')[1]
+            cat_detail = csv_key.split('&')[2]
+            
+            writer.writerow([model_name, split, cat_broad, cat_detail,score])
+            
+    # calculate token length per score. results[score_key][1][qid]
+    token2score = {}
+    for i in range(2,571):
+        token2score[i] = []
+        
+    for example_id, values in tqdm(docci_id2meta.items()):
+        if 'dsg' in values:
+            for sent_id, sent_info in docci_id2meta[example_id]['dsg']['question'].items():
+                if len(sent_info['question'])>0:
+                    score_key = f"{example_id}&{sent_id}"
+                    sent_avgscore = results[score_key][0]
+                    for i in token2score.keys():
+                        if sent_info['start_tokenlen']<=i and i<=sent_info['end_tokenlen']:
+                            token2score[i].append(sent_avgscore)
+    tokenlen_csv_path = os.path.join(
+        exp_root_path,
+        "quantitative results",
+        f"evalscore&{model_name}&mpluglarge_tokenlen.csv",
+    )
+    with open(tokenlen_csv_path, "w", newline="") as file:
+        writer = csv.writer(file)
+        writer.writerow(["model name", "token position", "average score","# of sentences on this position"])
+        for token_position, scores in token2score.items():
+            count = len(scores)
+            if len(scores)==0:
+                scores =[0]
+            writer.writerow([model_name, token_position, np.mean(scores), count])

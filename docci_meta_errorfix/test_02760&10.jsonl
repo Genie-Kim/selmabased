@@ -1,0 +1,5 @@
+{"keywords": "trees", "proposition_id": "1", "dependency": "0", "category_broad": "entity", "category_detailed": "whole", "question_natural_language": "Are there trees?"}
+{"keywords": "trees, low line", "proposition_id": "2", "dependency": "1", "category_broad": "attribute", "category_detailed": "shape", "question_natural_language": "Are the trees in a low line shape?"}
+{"keywords": "trees, left half of the frame", "proposition_id": "3", "dependency": "1", "category_broad": "attribute", "category_detailed": "spatial", "question_natural_language": "Are the trees located in the left half of the frame?"}
+{"keywords": "trees, top to bottom", "proposition_id": "4", "dependency": "1", "category_broad": "attribute", "category_detailed": "spatial", "question_natural_language": "Do the trees span from top to bottom?"}
+{"keywords": "trees, frame, in", "proposition_id": "5", "dependency": "1", "category_broad": "relation", "category_detailed": "spatial", "question_natural_language": "Are the trees within the frame?"}

@@ -20,7 +20,7 @@ BATCH_SIZE=${3}
 DATA_DIR=$PWD
 SPLITS=("test" "qual_test" "qual_dev")
 # EXP_ROOT="exp_results"
-# Q_JSONPATH="datasets/docci/docci_metadata.jsonlines"
+# Q_JSONPATH="docci_meta_errorfix/docci_metadata_refined.jsonlines"
 
 
 # Run the first Python script
@@ -52,7 +52,3 @@ else
     echo "\n\nimg_gen_merge.py failed to execute successfully."
 fi
 
-# python DSG/make_answerfile2score.py --answer_file ${output_file} \
-# --org_jsonpath ${Q_JSONPATH} \
-# --exp_root ${EXP_ROOT} \
-# --exp_path ${EXP_PATH}

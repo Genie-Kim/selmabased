@@ -1,0 +1,16 @@
+{"keywords": "wall", "proposition_id": "1", "dependency": "0", "category_broad": "entity", "category_detailed": "whole", "question_natural_language": "Is there a wall?"}
+{"keywords": "doorway", "proposition_id": "2", "dependency": "0", "category_broad": "entity", "category_detailed": "whole", "question_natural_language": "Is there a doorway?"}
+{"keywords": "plug_1", "proposition_id": "3", "dependency": "0", "category_broad": "entity", "category_detailed": "whole", "question_natural_language": "Is there a plug on the right side at the bottom of the wall?"}
+{"keywords": "plug_2", "proposition_id": "4", "dependency": "0", "category_broad": "entity", "category_detailed": "whole", "question_natural_language": "Is there another plug at the bottom of the center of the wall on the right?"}
+{"keywords": "plug_1, white", "proposition_id": "5", "dependency": "3", "category_broad": "attribute", "category_detailed": "color", "question_natural_language": "Is the first plug white?"}
+{"keywords": "plug_2, white", "proposition_id": "6", "dependency": "4", "category_broad": "attribute", "category_detailed": "color", "question_natural_language": "Is the second plug white?"}
+{"keywords": "plug_1, electric", "proposition_id": "7", "dependency": "3", "category_broad": "attribute", "category_detailed": "type", "question_natural_language": "Is the first plug an electric plug?"}
+{"keywords": "plug_2, electric", "proposition_id": "8", "dependency": "4", "category_broad": "attribute", "category_detailed": "type", "question_natural_language": "Is the second plug an electric plug?"}
+{"keywords": "plug_1, wall, on", "proposition_id": "9", "dependency": "1,3", "category_broad": "relation", "category_detailed": "spatial", "question_natural_language": "Is the first plug on the wall?"}
+{"keywords": "plug_1, bottom, at", "proposition_id": "10", "dependency": "3", "category_broad": "relation", "category_detailed": "spatial", "question_natural_language": "Is the first plug at the bottom of the wall?"}
+{"keywords": "plug_1, right side, on", "proposition_id": "11", "dependency": "3", "category_broad": "relation", "category_detailed": "spatial", "question_natural_language": "Is the first plug on the right side of the wall?"}
+{"keywords": "plug_2, wall, on", "proposition_id": "12", "dependency": "1,4", "category_broad": "relation", "category_detailed": "spatial", "question_natural_language": "Is the second plug on the wall?"}
+{"keywords": "plug_2, bottom, at", "proposition_id": "13", "dependency": "4", "category_broad": "relation", "category_detailed": "spatial", "question_natural_language": "Is the second plug at the bottom of the wall?"}
+{"keywords": "plug_2, center, at", "proposition_id": "14", "dependency": "4", "category_broad": "relation", "category_detailed": "spatial", "question_natural_language": "Is the second plug at the center of the wall?"}
+{"keywords": "plug_2, right, on", "proposition_id": "15", "dependency": "4", "category_broad": "relation", "category_detailed": "spatial", "question_natural_language": "Is the second plug on the right side of the wall?"}
+{"keywords": "doorway, wall, across from", "proposition_id": "16", "dependency": "1,2", "category_broad": "relation", "category_detailed": "spatial", "question_natural_language": "Is the doorway across from the wall?"}
