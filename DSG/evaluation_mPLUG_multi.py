@@ -11,7 +11,9 @@ from vqa_utils import MPLUG
 import torch
 
 exp_root_path = "exp_results"
+original_image_path = "exp_results/docci/images_eval_output"
 
+# if you want to use the original image, you should set the exp_path to "docci/image_eval_output".
 
 def parse_argments():
     parser = argparse.ArgumentParser()
@@ -104,7 +106,12 @@ if __name__ == "__main__":
     print("prepareing multi-processing")
     for example_id, values in tqdm(docci_id2meta.items()):
         split = '_'.join(example_id.split('_')[:-1])
-        image_path = os.path.join(model_exppath,split,f"{example_id}.jpg")
+        if args.exp_path == 'docci/images_eval_output':
+            image_path = os.path.join(
+                original_image_path,split,f"{example_id}.jpg"
+            )
+        else:
+            image_path = os.path.join(model_exppath,split,f"{example_id}.jpg")
         assert os.path.isfile(image_path), f"there is no image file in {image_path}"
         
         if split in args.splits:
@@ -166,29 +173,26 @@ if __name__ == "__main__":
                 else:
                     id2dependency = sent_dict['dependency']
                     id2scores = dict()
-                    try:
-                        for question_id,question in questions.items():
-                            answer_key = f"{example_id}&{sentence_id}&{question_id}"
-                            answer = answers_dict[answer_key]
-                            id2scores[question_id] = float("yes" in answer)
+                    for question_id,question in questions.items():
+                        answer_key = f"{example_id}&{sentence_id}&{question_id}"
+                        answer = answers_dict[answer_key]
+                        id2scores[question_id] = float("yes" in answer)
 
-                        for id, parent_ids in id2dependency.items():
-                            any_parent_answered_no = False
-                            for parent_id in parent_ids:
-                                if parent_id == "0":
-                                    continue
-                                if parent_id in id2scores and id2scores[parent_id] == 0:
-                                    any_parent_answered_no = True
-                                    break
-                            if any_parent_answered_no:
-                                id2scores[id] = 0  # 부모 중 하나라도 no를 선택했으면 자식도 no로 처리
+                    for id, parent_ids in id2dependency.items():
+                        any_parent_answered_no = False
+                        for parent_id in parent_ids:
+                            if parent_id == "0":
+                                continue
+                            if parent_id in id2scores and id2scores[parent_id] == 0:
+                                any_parent_answered_no = True
+                                break
+                        if any_parent_answered_no:
+                            id2scores[id] = 0  # 부모 중 하나라도 no를 선택했으면 자식도 no로 처리
 
-                        average_score = sum(id2scores.values()) / len(id2scores) # sentence average score
-                        sentence_key = f"{example_id}&{sentence_id}"
-                        results[sentence_key] = [average_score, id2scores]
-                    except:
-                        print(f"error in {example_id}&{sentence_id}")
-                        continue
+                    average_score = sum(id2scores.values()) / len(id2scores) # sentence average score
+                    sentence_key = f"{example_id}&{sentence_id}"
+                    results[sentence_key] = [average_score, id2scores]
+
 
     # SAVE score file.
     with open(args.save_path, "w") as f:

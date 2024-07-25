@@ -1,4 +1,9 @@
 
+
+#######################
+
+# tmux send-keys -t tm07 'CUDA_VISIBLE_DEVICES=3 bash eval_docci_mPLUGL.sh "docci" "oracle" 1' ENTER
+
 #######################
 
 # tmux send-keys -t tm07 'CUDA_VISIBLE_DEVICES=3 bash eval_docci_mPLUGL.sh "runwayml/stable-diffusion-v1-5" "longclip" 1' ENTER
