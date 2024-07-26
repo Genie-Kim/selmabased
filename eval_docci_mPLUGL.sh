@@ -27,11 +27,14 @@ SPLITS=("test" "qual_test" "qual_dev")
 # =====================================
 # Task 1: image generation
 # =====================================
-CUDA_VISIBLE_DEVICES=${GPULIST[0]} python img_gen_merge.py \
---pipename ${PIPENAME} \
---batch_size ${BATCH_SIZE} \
---model_id ${MODEL_ID} \
---splits ${SPLITS[@]}
+python img_gen_merge.py \
+    --pipename ${PIPENAME} \
+    --batch_size ${BATCH_SIZE} \
+    --model_id ${MODEL_ID} \
+    --splits ${SPLITS[@]} \
+    --gpu_num ${GPULIST[@]} \
+    --worker_num_pergpu 6 \
+
 
 
 # =====================================

@@ -81,7 +81,7 @@ def parse_arguments():
     )
 
     parser.add_argument("--worker_num_pergpu", type=int, default=1)
-    parser.add_argument("--gpu_num", nargs="+",type=str, default=["0","1"])
+    parser.add_argument("--gpu_num", nargs="+",type=str, default=["0"])
     parser.add_argument("--debug", action="store_true")
 
     args = parser.parse_args()
