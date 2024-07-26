@@ -58,6 +58,7 @@ def parse_arguments():
             "longclip",
             "clip_repeattext",
             "clip_repeattext_30",
+            "clip_repeattext_0",
             "clip_repeattext_40",
             "clip_repeattext_50",
             "clip_normal",
@@ -112,8 +113,7 @@ def generate_images(inputlist_config_data_gpunum):
     config['device'] = torch.device(f"cuda:{gpu_num}")
     
     # initinalization
-    if pipename_listinpipename(config['pipename'], ["longclip","clip_repeattext","clip_repeattext_30", "clip_repeattext_40",
-            "clip_repeattext_50","clip_normal","clip_summary"]):
+    if pipename_listinpipename(config['pipename'], ["longclip","clip_repeattext","clip_normal","clip_summary"]):
         if config['pipename'] == "longclip":
             assert config['model_id'] != "stabilityai/stable-diffusion-2", "LongCLIP model is not supported SD v2.1"
             longclip_modelpath = os.path.join(config['cache_dir'], "LongCLIP/longclip-L.pt")

@@ -149,80 +149,110 @@ class RepeatTextencStableDiffusionPipeline(StableDiffusionPipeline):
                 if  self.repeat_tokenlen is not None:
                     # for long text!
                     tokenizer_max_length = self.tokenizer.model_max_length                     
-                    
-                    with torch.no_grad():
+                    if self.repeat_tokenlen==0: # sentence split and concat
+                        assert batch_size==1, "sentence split and concat is only available for batch size 1"
+                        for desc in prompt:
+                            desc = desc.split('. ')
+                            desctemp = [f"{d}." for d in desc if d[-1]!="."]
+                            desctemp.append(desc[-1])
+                            desctemp_inputs_ids = self.tokenizer(
+                                desctemp,
+                                padding="max_length",
+                                max_length=tokenizer_max_length,
+                                truncation=True,
+                                return_tensors="pt",
+                            ).input_ids
+                            attention_mask = None
+                            sentence_embeds = self.text_encoder(desctemp_inputs_ids.to(device), attention_mask=attention_mask)
+                            sentence_embeds = sentence_embeds[0]
+                            
+                            for i in range(desctemp_inputs_ids.size(0)):
+                                if i==0:
+                                    prompt_embeds_sentconcat = sentence_embeds[i][:desctemp_inputs_ids[i].argmax()]
+                                elif i==desctemp_inputs_ids.size(0)-1:
+                                    prompt_embeds_sentconcat = torch.cat((prompt_embeds_sentconcat,sentence_embeds[i][1:desctemp_inputs_ids[i].argmax()+1]),dim=0)
+                                else:
+                                    prompt_embeds_sentconcat = torch.cat((prompt_embeds_sentconcat,sentence_embeds[i][1:desctemp_inputs_ids[i].argmax()]),dim=0)
+                                    
+                            if prompt_embeds is None:
+                                prompt_embeds=prompt_embeds_sentconcat.unsqueeze(0)
+                            else:
+                                prompt_embeds=torch.cat((prompt_embeds,prompt_embeds_sentconcat.unsqueeze(0)), dim=0)
+
+                    else:
+                        with torch.no_grad():
+                            text_inputs = self.tokenizer(
+                                prompt,
+                                padding="longest",
+                                return_tensors="pt",
+                            )
+                            current_max_length=text_inputs.input_ids.size(1)
+                            current_max_length = math.ceil(current_max_length / self.repeat_tokenlen) * self.repeat_tokenlen
+
                         text_inputs = self.tokenizer(
                             prompt,
-                            padding="longest",
+                            padding="max_length",
+                            max_length=current_max_length,
+                            truncation=True,
                             return_tensors="pt",
                         )
-                        current_max_length=text_inputs.input_ids.size(1)
-                        current_max_length = math.ceil(current_max_length / self.repeat_tokenlen) * self.repeat_tokenlen
+                        text_input_ids = text_inputs.input_ids
 
-                    text_inputs = self.tokenizer(
-                        prompt,
-                        padding="max_length",
-                        max_length=current_max_length,
-                        truncation=True,
-                        return_tensors="pt",
-                    )
-                    text_input_ids = text_inputs.input_ids
-
-                    print(f"repeat text encoding : current prompt length is {text_input_ids.size(1)}")
-                    divided_text_input_ids = text_input_ids.view(batch_size, -1,self.repeat_tokenlen) # [batch_size, text split number, token_max_length]
-                    repeat_count = divided_text_input_ids.size(1)
-                    if hasattr(self.text_encoder.config, "use_attention_mask") and self.text_encoder.config.use_attention_mask:
-                        attention_mask = text_inputs.attention_mask.to(device)
-                        divided_attention_mask = attention_mask.view(batch_size, -1, self.repeat_tokenlen)
-                    else:
-                        divided_attention_mask = None
-
-                    for i in range(repeat_count):
-                        if i==0:
-                            batchlike_size = divided_text_input_ids.shape
-                            divided_text_input_ids_batchlike = torch.zeros(torch.Size([batchlike_size[0],batchlike_size[1],tokenizer_max_length]),dtype=text_input_ids.dtype)
-                        divided_text_input_ids_batchlike[:, i, :] = torch.nn.functional.pad(
-                            divided_text_input_ids[:, i, :],
-                            (0, tokenizer_max_length - self.repeat_tokenlen),
-                            value=self.tokenizer.pad_token_id
-                        )
-                        if divided_attention_mask is not None:
-                            if i==0:
-                                batchlike_size = divided_attention_mask.shape
-                                divided_attention_mask_batchlike = torch.zeros(torch.Size([batchlike_size[0],batchlike_size[1],tokenizer_max_length]),dtype=text_input_ids.dtype)
-                            divided_attention_mask_batchlike[:, i, :] = torch.nn.functional.pad(
-                                divided_attention_mask[:, i, :],
-                                (0, tokenizer_max_length - self.repeat_tokenlen),
-                                value=0
-                            )
+                        print(f"repeat text encoding : current prompt length is {text_input_ids.size(1)}")
+                        divided_text_input_ids = text_input_ids.view(batch_size, -1,self.repeat_tokenlen) # [batch_size, text split number, token_max_length]
+                        repeat_count = divided_text_input_ids.size(1)
+                        if hasattr(self.text_encoder.config, "use_attention_mask") and self.text_encoder.config.use_attention_mask:
+                            attention_mask = text_inputs.attention_mask.to(device)
+                            divided_attention_mask = attention_mask.view(batch_size, -1, self.repeat_tokenlen)
                         else:
-                            divided_attention_mask_batchlike = None
-                    
-                    divided_text_input_ids_batchlike = divided_text_input_ids_batchlike.view(-1,tokenizer_max_length)
-                    if divided_attention_mask is not None:
-                        divided_attention_mask_batchlike = divided_attention_mask_batchlike.view(-1,tokenizer_max_length)
-                                         
-                    
-                    if clip_skip is None:
-                        prompt_embeds = self.text_encoder(divided_text_input_ids_batchlike.to(device), attention_mask=divided_attention_mask_batchlike)
-                        prompt_embeds = prompt_embeds[0]
+                            divided_attention_mask = None
 
-                    else:
-                        prompt_embeds = self.text_encoder(
-                            divided_text_input_ids_batchlike.to(device), attention_mask=divided_attention_mask_batchlike, output_hidden_states=True
-                        )
-                        # Access the `hidden_states` first, that contains a tuple of
-                        # all the hidden states from the encoder layers. Then index into
-                        # the tuple to access the hidden states from the desired layer.
-                        prompt_embeds = prompt_embeds[-1][-(clip_skip + 1)]
-                        # We also need to apply the final LayerNorm here to not mess with the
-                        # representations. The `last_hidden_states` that we typically use for
-                        # obtaining the final prompt representations passes through the LayerNorm
-                        # layer.
-                        prompt_embeds = self.text_encoder.text_model.final_layer_norm(prompt_embeds)
-                    
-                    prompt_embeds = prompt_embeds.view(batch_size, repeat_count,tokenizer_max_length, -1)
-                    prompt_embeds = prompt_embeds[:,:,:self.repeat_tokenlen,:].reshape(batch_size,repeat_count*self.repeat_tokenlen,-1)
+                        for i in range(repeat_count):
+                            if i==0:
+                                batchlike_size = divided_text_input_ids.shape
+                                divided_text_input_ids_batchlike = torch.zeros(torch.Size([batchlike_size[0],batchlike_size[1],tokenizer_max_length]),dtype=text_input_ids.dtype)
+                            divided_text_input_ids_batchlike[:, i, :] = torch.nn.functional.pad(
+                                divided_text_input_ids[:, i, :],
+                                (0, tokenizer_max_length - self.repeat_tokenlen),
+                                value=self.tokenizer.pad_token_id
+                            )
+                            if divided_attention_mask is not None:
+                                if i==0:
+                                    batchlike_size = divided_attention_mask.shape
+                                    divided_attention_mask_batchlike = torch.zeros(torch.Size([batchlike_size[0],batchlike_size[1],tokenizer_max_length]),dtype=text_input_ids.dtype)
+                                divided_attention_mask_batchlike[:, i, :] = torch.nn.functional.pad(
+                                    divided_attention_mask[:, i, :],
+                                    (0, tokenizer_max_length - self.repeat_tokenlen),
+                                    value=0
+                                )
+                            else:
+                                divided_attention_mask_batchlike = None
+                        
+                        divided_text_input_ids_batchlike = divided_text_input_ids_batchlike.view(-1,tokenizer_max_length)
+                        if divided_attention_mask is not None:
+                            divided_attention_mask_batchlike = divided_attention_mask_batchlike.view(-1,tokenizer_max_length)
+                                            
+                        
+                        if clip_skip is None:
+                            prompt_embeds = self.text_encoder(divided_text_input_ids_batchlike.to(device), attention_mask=divided_attention_mask_batchlike)
+                            prompt_embeds = prompt_embeds[0]
+
+                        else:
+                            prompt_embeds = self.text_encoder(
+                                divided_text_input_ids_batchlike.to(device), attention_mask=divided_attention_mask_batchlike, output_hidden_states=True
+                            )
+                            # Access the `hidden_states` first, that contains a tuple of
+                            # all the hidden states from the encoder layers. Then index into
+                            # the tuple to access the hidden states from the desired layer.
+                            prompt_embeds = prompt_embeds[-1][-(clip_skip + 1)]
+                            # We also need to apply the final LayerNorm here to not mess with the
+                            # representations. The `last_hidden_states` that we typically use for
+                            # obtaining the final prompt representations passes through the LayerNorm
+                            # layer.
+                            prompt_embeds = self.text_encoder.text_model.final_layer_norm(prompt_embeds)
+                        
+                        prompt_embeds = prompt_embeds.view(batch_size, repeat_count,tokenizer_max_length, -1)
+                        prompt_embeds = prompt_embeds[:,:,:self.repeat_tokenlen,:].reshape(batch_size,repeat_count*self.repeat_tokenlen,-1)
 
                 else:
                     text_inputs = self.tokenizer(
@@ -322,59 +352,85 @@ class RepeatTextencStableDiffusionPipeline(StableDiffusionPipeline):
             else:
                 # for repeated text encoding
                 if self.repeat_tokenlen is not None:
-                    tokenizer_max_length = self.tokenizer.model_max_length
-                    # current_max_length
-                    uncond_input = self.tokenizer(
-                        uncond_tokens,
-                        padding="max_length",
-                        max_length=current_max_length,
-                        truncation=True,
-                        return_tensors="pt",
-                    )
-                    uncond_input_ids = uncond_input.input_ids
-                    divided_uncond_input_ids = uncond_input_ids.view(batch_size, -1,self.repeat_tokenlen) # [batch_size, text split number, token_max_length]
-                    repeat_count = divided_uncond_input_ids.size(1)
                     
-                    if hasattr(self.text_encoder.config, "use_attention_mask") and self.text_encoder.config.use_attention_mask:
-                        attention_mask = uncond_input.attention_mask.to(device)
-                        divided_attention_mask = attention_mask.view(batch_size, -1, self.repeat_tokenlen)
-                    else:
-                        divided_attention_mask = None
-
-                    for i in range(repeat_count):
-                        if i==0:
-                            batchlike_size = divided_uncond_input_ids.shape
-                            divided_uncond_input_ids_batchlike = torch.zeros(torch.Size([batchlike_size[0],batchlike_size[1],tokenizer_max_length]),dtype=text_input_ids.dtype)
-                        divided_uncond_input_ids_batchlike[:, i, :] = torch.nn.functional.pad(
-                            divided_uncond_input_ids[:, i, :],
-                            (0, tokenizer_max_length - self.repeat_tokenlen),
-                            value=self.tokenizer.pad_token_id
-                        )
-                        if divided_attention_mask is not None:
-                            if i==0:
-                                batchlike_size = divided_attention_mask.shape
-                                divided_attention_mask_batchlike = torch.zeros(torch.Size([batchlike_size[0],batchlike_size[1],tokenizer_max_length]),dtype=text_input_ids.dtype)
-                            divided_attention_mask_batchlike[:, i, :] = torch.nn.functional.pad(
-                                divided_attention_mask[:, i, :],
-                                (0, tokenizer_max_length - self.repeat_tokenlen),
-                                value=0
+                    if self.repeat_tokenlen==0: # sentence split and concat
+                        for i in range(desctemp_inputs_ids.size(0)):
+                            uncond_input = self.tokenizer(
+                                uncond_tokens,
+                                padding="max_length",
+                                max_length=tokenizer_max_length,
+                                truncation=True,
+                                return_tensors="pt",
                             )
+                            attention_mask = None
+
+                            negative_prompt_sentembeds = self.text_encoder(
+                                uncond_input.input_ids.to(device),
+                                attention_mask=attention_mask,
+                            )
+                            negative_prompt_sentembeds = negative_prompt_sentembeds[0]
+                            
+                            if i==0:
+                                negative_prompt_embeds = negative_prompt_sentembeds[0][:desctemp_inputs_ids[i].argmax()]
+                            elif i==desctemp_inputs_ids.size(0)-1:
+                                negative_prompt_embeds = torch.cat((negative_prompt_embeds,negative_prompt_sentembeds[0][1:desctemp_inputs_ids[i].argmax()+1]),dim=0)
+                            else:
+                                negative_prompt_embeds = torch.cat((negative_prompt_embeds,negative_prompt_sentembeds[0][1:desctemp_inputs_ids[i].argmax()]),dim=0)
+                        negative_prompt_embeds=negative_prompt_embeds.unsqueeze(0)
+                    else:
+                        tokenizer_max_length = self.tokenizer.model_max_length
+                        # current_max_length
+                        uncond_input = self.tokenizer(
+                            uncond_tokens,
+                            padding="max_length",
+                            max_length=current_max_length,
+                            truncation=True,
+                            return_tensors="pt",
+                        )
+                        uncond_input_ids = uncond_input.input_ids
+                        divided_uncond_input_ids = uncond_input_ids.view(batch_size, -1,self.repeat_tokenlen) # [batch_size, text split number, token_max_length]
+                        repeat_count = divided_uncond_input_ids.size(1)
+                        
+                        if hasattr(self.text_encoder.config, "use_attention_mask") and self.text_encoder.config.use_attention_mask:
+                            attention_mask = uncond_input.attention_mask.to(device)
+                            divided_attention_mask = attention_mask.view(batch_size, -1, self.repeat_tokenlen)
                         else:
-                            divided_attention_mask_batchlike = None
-    
-    
-                    divided_uncond_input_ids_batchlike = divided_uncond_input_ids_batchlike.view(-1,tokenizer_max_length)
-                    if divided_attention_mask is not None:
-                        divided_attention_mask_batchlike = divided_attention_mask_batchlike.view(-1,tokenizer_max_length)
-                                
-                    negative_prompt_embeds = self.text_encoder(
-                        divided_uncond_input_ids_batchlike.to(device),
-                        attention_mask=divided_attention_mask_batchlike,
-                    )
-                    negative_prompt_embeds = negative_prompt_embeds[0]
-                    
-                    negative_prompt_embeds = negative_prompt_embeds.view(batch_size, repeat_count,tokenizer_max_length, -1)
-                    negative_prompt_embeds = negative_prompt_embeds[:,:,:self.repeat_tokenlen,:].reshape(batch_size,repeat_count*self.repeat_tokenlen,-1)
+                            divided_attention_mask = None
+
+                        for i in range(repeat_count):
+                            if i==0:
+                                batchlike_size = divided_uncond_input_ids.shape
+                                divided_uncond_input_ids_batchlike = torch.zeros(torch.Size([batchlike_size[0],batchlike_size[1],tokenizer_max_length]),dtype=text_input_ids.dtype)
+                            divided_uncond_input_ids_batchlike[:, i, :] = torch.nn.functional.pad(
+                                divided_uncond_input_ids[:, i, :],
+                                (0, tokenizer_max_length - self.repeat_tokenlen),
+                                value=self.tokenizer.pad_token_id
+                            )
+                            if divided_attention_mask is not None:
+                                if i==0:
+                                    batchlike_size = divided_attention_mask.shape
+                                    divided_attention_mask_batchlike = torch.zeros(torch.Size([batchlike_size[0],batchlike_size[1],tokenizer_max_length]),dtype=text_input_ids.dtype)
+                                divided_attention_mask_batchlike[:, i, :] = torch.nn.functional.pad(
+                                    divided_attention_mask[:, i, :],
+                                    (0, tokenizer_max_length - self.repeat_tokenlen),
+                                    value=0
+                                )
+                            else:
+                                divided_attention_mask_batchlike = None
+        
+        
+                        divided_uncond_input_ids_batchlike = divided_uncond_input_ids_batchlike.view(-1,tokenizer_max_length)
+                        if divided_attention_mask is not None:
+                            divided_attention_mask_batchlike = divided_attention_mask_batchlike.view(-1,tokenizer_max_length)
+                                    
+                        negative_prompt_embeds = self.text_encoder(
+                            divided_uncond_input_ids_batchlike.to(device),
+                            attention_mask=divided_attention_mask_batchlike,
+                        )
+                        negative_prompt_embeds = negative_prompt_embeds[0]
+                        
+                        negative_prompt_embeds = negative_prompt_embeds.view(batch_size, repeat_count,tokenizer_max_length, -1)
+                        negative_prompt_embeds = negative_prompt_embeds[:,:,:self.repeat_tokenlen,:].reshape(batch_size,repeat_count*self.repeat_tokenlen,-1)
 
 
                 else:
