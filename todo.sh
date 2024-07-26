@@ -1,4 +1,7 @@
 
+tmux send-keys -t tm01 'CUDA_VISIBLE_DEVICES=0 bash eval_docci_mPLUGL.sh "runwayml/stable-diffusion-v1-5" "clip_repeattext_30" 1' ENTER
+tmux send-keys -t tm02 'CUDA_VISIBLE_DEVICES=1 bash eval_docci_mPLUGL.sh "runwayml/stable-diffusion-v1-5" "clip_repeattext_40" 1' ENTER
+tmux send-keys -t tm03 'CUDA_VISIBLE_DEVICES=2 bash eval_docci_mPLUGL.sh "runwayml/stable-diffusion-v1-5" "clip_repeattext_50" 1' ENTER
 
 #######################
 

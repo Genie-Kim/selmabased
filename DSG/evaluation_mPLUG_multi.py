@@ -240,15 +240,21 @@ if __name__ == "__main__":
                 cat_broad_count += len(values)
                 all += np.sum(values)
                 count += len(values)
-            csv_key = f"{split}&{cat_braod}&agnostic"
+            csv_key = f"{split}&{cat_braod}&Total"
             output_csv[csv_key] = cat_broad_all / cat_broad_count
-        csv_key=f"{split}&agnostic&agnostic"
+        csv_key=f"{split}&Total&Total"
         output_csv[csv_key] = all / count
                 
                 
                 
     model_name = args.exp_path.replace("/", "&")
-
+    
+    sdversion = model_name.split("&")[0]
+    sdversion = sdversion.replace("stable-diffusion-2-1","SD2.1")
+    sdversion = sdversion.replace("stable-diffusion-v1-5","SD1.5")
+    pipename = model_name.split("&")[1]
+    pipename = "_".join(pipename.split("_")[:-1])
+    
     csv_path = os.path.join(
         exp_root_path,
         "quantitative results",
@@ -258,13 +264,24 @@ if __name__ == "__main__":
     # Save output dictionary to CSV
     with open(csv_path, "w", newline="") as file:
         writer = csv.writer(file)
-        writer.writerow(["model name", "split", "category_broad", "category_detailed", "score"])
+        writer.writerow(["model name","method", "split", "category_broad", "category_detailed", "score","information type"])
+
         for csv_key, score in output_csv.items():
             split = csv_key.split('&')[0]
             cat_broad = csv_key.split('&')[1]
             cat_detail = csv_key.split('&')[2]
-            
-            writer.writerow([model_name, split, cat_broad, cat_detail,score])
+            if cat_detail in ['count']:
+                information_type = 'Count'
+            elif cat_detail in ['size', 'shape']:
+                information_type = 'Size&shape'
+            elif cat_detail in ['color', 'texture', 'material']:
+                information_type = 'Style'
+            elif cat_detail in ['spatial']:
+                information_type = "Spatial"
+            else:
+                information_type="None"
+                
+            writer.writerow([sdversion,pipename, split, cat_broad, cat_detail,score,information_type])
             
     # calculate token length per score. results[score_key][1][qid]
     token2score = {}
@@ -287,9 +304,9 @@ if __name__ == "__main__":
     )
     with open(tokenlen_csv_path, "w", newline="") as file:
         writer = csv.writer(file)
-        writer.writerow(["model name", "token position", "average score","# of sentences on this position"])
+        writer.writerow(["model name","method", "token position", "average score","# of sentences on this position"])
         for token_position, scores in token2score.items():
             count = len(scores)
             if len(scores)==0:
                 scores =[0]
-            writer.writerow([model_name, token_position, np.mean(scores), count])
+            writer.writerow([sdversion,pipename, token_position, np.mean(scores), count])

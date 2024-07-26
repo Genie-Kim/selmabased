@@ -23,17 +23,15 @@ SPLITS=("test" "qual_test" "qual_dev")
 # Q_JSONPATH="docci_meta_errorfix/docci_metadata_refined.jsonlines"
 
 
-# Run the first Python script
 # It can't run with multi gpu yet.
-
 # =====================================
 # Task 1: image generation
 # =====================================
-# CUDA_VISIBLE_DEVICES=${GPULIST[0]} python img_gen_merge.py \
-# --pipename ${PIPENAME} \
-# --batch_size ${BATCH_SIZE} \
-# --model_id ${MODEL_ID} \
-# --splits ${SPLITS[@]}
+CUDA_VISIBLE_DEVICES=${GPULIST[0]} python img_gen_merge.py \
+--pipename ${PIPENAME} \
+--batch_size ${BATCH_SIZE} \
+--model_id ${MODEL_ID} \
+--splits ${SPLITS[@]}
 
 
 # =====================================
